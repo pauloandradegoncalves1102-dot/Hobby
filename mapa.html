@@ -94,7 +94,7 @@
 
         .search-btn:hover { background: var(--primary-hover); }
 
-        /* ── Painel lateral ── */
+    
         .panel {
             position: absolute;
             top: 60px;
@@ -241,7 +241,7 @@
             margin-top: 2px;
         }
 
-        /* ── Botões flutuantes ── */
+    
         .map-controls {
             position: absolute;
             right: 12px;
@@ -270,13 +270,13 @@
         .map-btn:hover { background: var(--bg-dark); }
         .map-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
-        /* ── Mapa ── */
+        
         #map {
             flex: 1;
             z-index: 1;
         }
 
-        /* ── Barra de status ── */
+       
         .status-bar {
             position: absolute;
             bottom: 12px;
@@ -293,7 +293,7 @@
 
         .status-bar.visible { display: block; }
 
-        /* ── Responsivo ── */
+       
         @media (max-width: 600px) {
             .panel { width: calc(100% - 24px); left: 12px; }
             .logo { display: none; }
@@ -395,7 +395,7 @@ const camadas = [
 
 
 const mapa = L.map('map', {
-    center: [-14.2350, -51.9253], // Brasil
+    center: [-14.2350, -51.9253], 
     zoom: 5,
     zoomControl: false
 });
@@ -540,7 +540,7 @@ async function calcularRota() {
     try {
         const origem = await geocode(origemTxt);
         if (!origem) { mostrarStatus("Origem não encontrada."); setTimeout(ocultarStatus, 3000); return; }
-        await new Promise(r => setTimeout(r, 1100)); // respeita rate limit Nominatim
+        await new Promise(r => setTimeout(r, 1100));
         const destino = await geocode(destinoTxt);
         if (!destino) { mostrarStatus("Destino não encontrado."); setTimeout(ocultarStatus, 3000); return; }
 
@@ -557,12 +557,12 @@ async function calcularRota() {
         const rota = data.routes[0];
         const coords = rota.geometry.coordinates.map(c => [c[1], c[0]]);
 
-        // Remove rota anterior
+        
         if (rotaLayer) mapa.removeLayer(rotaLayer);
         if (marcadorOrigem) mapa.removeLayer(marcadorOrigem);
         if (marcadorDestino) mapa.removeLayer(marcadorDestino);
 
-        // Desenha rota
+        
         rotaLayer = L.polyline(coords, {
             color: "#1a73e8",
             weight: 4,
@@ -570,7 +570,7 @@ async function calcularRota() {
             lineCap: "round"
         }).addTo(mapa);
 
-        // Marcadores
+       
         marcadorOrigem = L.marker(coords[0], {
             icon: L.divIcon({
                 className: '',
@@ -589,11 +589,9 @@ async function calcularRota() {
             })
         }).addTo(mapa).bindPopup("Destino");
 
-        // Ajuste de zoom
+        
         const bounds = L.latLngBounds(coords);
         mapa.flyToBounds(bounds, { padding: [50, 50], duration: 1 });
-
-        // Info
         const durMin = Math.round(rota.duration / 60);
         const distKm = (rota.distance / 1000).toFixed(1);
         document.getElementById("routeDuration").textContent = `${durMin} min`;
@@ -607,10 +605,6 @@ async function calcularRota() {
         setTimeout(ocultarStatus, 3000);
     }
 }
-
-// ═══════════════════════════════════════════════
-// STATUS
-// ═══════════════════════════════════════════════
 
 function mostrarStatus(msg) {
     const bar = document.getElementById("statusBar");
