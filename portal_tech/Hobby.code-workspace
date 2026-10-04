@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"name": "Hobby",
+			"path": ".."
+		},
+		{
+			"name": "portal-tech",
+			"path": "../../portal-tech"
+		},
+		{
+			"name": "structure2",
+			"path": "../../structure2"
+		}
+	],
+	"settings": {
+		"liveServer.settings.port": 5503
+	}
+}

@@ -3,95 +3,1860 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motor 3D Nativo - Sem Dependências</title>
+    <title>Voltagem Pro | Eletricista Profissional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
+        :root {
+            --primary: #0a0e1a;
+            --secondary: #111827;
+            --accent: #f59e0b;
+            --accent-glow: rgba(245, 158, 11, 0.3);
+            --electric-blue: #3b82f6;
+            --electric-cyan: #06b6d4;
+            --text: #f9fafb;
+            --text-muted: #9ca3af;
+            --card-bg: rgba(17, 24, 39, 0.8);
+            --border: rgba(245, 158, 11, 0.15);
+            --gradient-1: linear-gradient(135deg, #f59e0b, #ef4444);
+            --gradient-2: linear-gradient(135deg, #3b82f6, #06b6d4);
+        }
+
+        * {
             margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary);
+            color: var(--text);
+            overflow-x: hidden;
+        }
+
+        /* ===== CURSOR GLOW ===== */
+        .cursor-glow {
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: opacity 0.3s;
+        }
+
+        /* ===== PARTICLES CANVAS ===== */
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .navbar.scrolled {
+            background: rgba(10, 14, 26, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 14px 60px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--text);
+        }
+
+        .nav-logo-icon {
+            width: 42px;
+            height: 42px;
+            background: var(--gradient-1);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .nav-logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .nav-logo-text span {
+            color: var(--accent);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 36px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            background: var(--gradient-1);
+            color: white !important;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px var(--accent-glow);
+            transition: transform 0.3s, box-shadow 0.3s !important;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px var(--accent-glow);
+        }
+
+        .nav-cta::after {
+            display: none !important;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            z-index: 1001;
+        }
+
+        .hamburger span {
+            width: 28px;
+            height: 2px;
+            background: var(--text);
+            transition: all 0.3s;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 120px 60px 80px;
+            position: relative;
             overflow: hidden;
-            background-color: #0b0d13;
+        }
+
+        .hero-bg-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(245, 158, 11, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(245, 158, 11, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+
+        .hero-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            animation: orbFloat 8s ease-in-out infinite;
+        }
+
+        .hero-orb-1 {
+            width: 500px;
+            height: 500px;
+            background: rgba(245, 158, 11, 0.15);
+            top: -100px;
+            right: -100px;
+        }
+
+        .hero-orb-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(59, 130, 246, 0.1);
+            bottom: -50px;
+            left: -50px;
+            animation-delay: -4s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(20px, -20px) scale(1.05); }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 700px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--accent);
+            margin-bottom: 28px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .hero-badge i {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .hero h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            animation: fadeInUp 0.8s ease 0.1s both;
+        }
+
+        .hero h1 .highlight {
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 40px;
+            max-width: 540px;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            animation: fadeInUp 0.8s ease 0.3s both;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: white;
+            padding: 16px 36px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px var(--accent-glow);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px var(--accent-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            padding: 16px 36px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 48px;
+            margin-top: 60px;
+            animation: fadeInUp 0.8s ease 0.4s both;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .hero-visual {
+            position: absolute;
+            right: 60px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 2;
+        }
+
+        .hero-circuit {
+            width: 450px;
+            height: 450px;
+            position: relative;
+        }
+
+        .circuit-ring {
+            position: absolute;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 50%;
+            animation: ringRotate 15s linear infinite;
+        }
+
+        .circuit-ring:nth-child(1) {
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+
+        .circuit-ring:nth-child(2) {
+            width: 75%;
+            height: 75%;
+            top: 12.5%;
+            left: 12.5%;
+            animation-direction: reverse;
+            animation-duration: 12s;
+        }
+
+        .circuit-ring:nth-child(3) {
+            width: 50%;
+            height: 50%;
+            top: 25%;
+            left: 25%;
+            animation-duration: 10s;
+        }
+
+        @keyframes ringRotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .circuit-node {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .circuit-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px;
+            height: 120px;
+            background: var(--secondary);
+            border: 2px solid var(--border);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: centerPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes centerPulse {
+            0%, 100% { box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 0 var(--accent-glow); }
+            50% { box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 20px transparent; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== SECTIONS ===== */
+        section {
+            padding: 100px 60px;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 70px;
+        }
+
+        .section-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--border);
+            padding: 6px 14px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .section-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* ===== SERVICES ===== */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .service-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 36px 28px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-1);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s;
+        }
+
+        .service-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .service-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .service-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(245, 158, 11, 0.1);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--accent);
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .service-card:hover .service-icon {
+            background: var(--gradient-1);
+            color: white;
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .service-card h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .service-card p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .service-tag {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 4px 12px;
+            background: rgba(245, 158, 11, 0.08);
+            border-radius: 50px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* ===== PROCESS ===== */
+        .process-timeline {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .process-timeline::before {
+            content: '';
+            position: absolute;
+            left: 30px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--accent), var(--electric-blue));
+        }
+
+        .process-step {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 48px;
+            position: relative;
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: all 0.6s ease;
+        }
+
+        .process-step.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .process-number {
+            width: 60px;
+            height: 60px;
+            min-width: 60px;
+            background: var(--secondary);
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent);
+            z-index: 1;
+        }
+
+        .process-content h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            margin-top: 8px;
+        }
+
+        .process-content p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* ===== PORTFOLIO ===== */
+        .portfolio-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .portfolio-item {
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            aspect-ratio: 4/3;
+            background: var(--secondary);
+            border: 1px solid rgba(255,255,255,0.06);
+            cursor: pointer;
+            transition: all 0.4s;
+        }
+
+        .portfolio-item:hover {
+            transform: scale(1.03);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .portfolio-item .portfolio-bg {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            opacity: 0.5;
+            transition: all 0.4s;
+        }
+
+        .portfolio-item:hover .portfolio-bg {
+            opacity: 0.8;
+            transform: scale(1.1);
+        }
+
+        .portfolio-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 24px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+            transform: translateY(100%);
+            transition: transform 0.4s;
+        }
+
+        .portfolio-item:hover .portfolio-overlay {
+            transform: translateY(0);
+        }
+
+        .portfolio-overlay h4 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .portfolio-overlay span {
+            font-size: 0.8rem;
+            color: var(--accent);
+        }
+
+        /* ===== TESTIMONIALS ===== */
+        .testimonials-container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .testimonial-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .testimonial-card.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .testimonial-stars {
+            color: var(--accent);
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .testimonial-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--text);
+            margin-bottom: 24px;
+            font-style: italic;
+        }
+
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .testimonial-avatar {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .testimonial-name {
+            font-weight: 600;
+        }
+
+        .testimonial-role {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .testimonial-dots {
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: sans-serif;
+            gap: 10px;
+            margin-top: 30px;
         }
-        canvas {
-            background-color: #11141d;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-            border-radius: 8px;
+
+        .testimonial-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .testimonial-dot.active {
+            background: var(--accent);
+            transform: scale(1.3);
+        }
+
+        /* ===== CTA SECTION ===== */
+        .cta-section {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(59, 130, 246, 0.05));
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .cta-content {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cta-content h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.6rem;
+            margin-bottom: 20px;
+        }
+
+        .cta-content p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 36px;
+            line-height: 1.6;
+        }
+
+        /* ===== CONTACT ===== */
+        .contact-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .contact-info h3 {
+            font-size: 1.6rem;
+            margin-bottom: 16px;
+        }
+
+        .contact-info > p {
+            color: var(--text-muted);
+            margin-bottom: 36px;
+            line-height: 1.6;
+        }
+
+        .contact-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .contact-item-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(245, 158, 11, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 1.1rem;
+        }
+
+        .contact-item-text h4 {
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+
+        .contact-item-text p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .contact-form {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 20px;
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+            outline: none;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+        }
+
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-submit {
+            width: 100%;
+            padding: 16px;
+            background: var(--gradient-1);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .form-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--accent-glow);
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            padding: 60px 60px 30px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            margin-bottom: 40px;
+        }
+
+        .footer-brand p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-top: 16px;
+        }
+
+        .footer-col h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .footer-col a {
+            display: block;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
+            transition: color 0.3s;
+        }
+
+        .footer-col a:hover {
+            color: var(--accent);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 30px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* ===== WHATSAPP FLOAT ===== */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: #25d366;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+            z-index: 999;
+            transition: all 0.3s;
+            animation: whatsappPulse 2s infinite;
+        }
+
+        @keyframes whatsappPulse {
+            0%, 100% { box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4); }
+            50% { box-shadow: 0 4px 30px rgba(37, 211, 102, 0.6); }
+        }
+
+        .whatsapp-float:hover {
+            transform: scale(1.1);
+        }
+
+        /* ===== SCROLL PROGRESS ===== */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--gradient-1);
+            z-index: 10000;
+            transition: width 0.1s;
+        }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+            animation: modalIn 0.4s ease;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            background: rgba(255,255,255,0.05);
+            border: none;
+            border-radius: 50%;
+            color: var(--text);
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .modal h3 {
+            font-size: 1.4rem;
+            margin-bottom: 12px;
+        }
+
+        .modal p {
+            color: var(--text-muted);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            background: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10001;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(34, 197, 94, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #22c55e;
+        }
+
+        .toast-text {
+            font-size: 0.9rem;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1024px) {
+            .hero-visual { display: none; }
+            .services-grid { grid-template-columns: repeat(2, 1fr); }
+            .portfolio-grid { grid-template-columns: repeat(2, 1fr); }
+            .contact-wrapper { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .navbar { padding: 16px 24px; }
+            .navbar.scrolled { padding: 12px 24px; }
+            .nav-links { 
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: var(--primary);
+                flex-direction: column;
+                justify-content: center;
+                gap: 24px;
+            }
+            .nav-links.active { display: flex; }
+            .hamburger { display: flex; }
+            .hero { padding: 100px 24px 60px; }
+            .hero h1 { font-size: 2.5rem; }
+            .hero-stats { gap: 24px; flex-wrap: wrap; }
+            section { padding: 60px 24px; }
+            .services-grid { grid-template-columns: 1fr; }
+            .portfolio-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr; }
+            .section-title { font-size: 2rem; }
         }
     </style>
 </head>
 <body>
-    <canvas id="renderCanvas" width="800" height="600"></canvas>
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Cursor Glow -->
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <!-- Particles -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="#" class="nav-logo">
+            <div class="nav-logo-icon"><i class="fas fa-bolt"></i></div>
+            <div class="nav-logo-text">Voltagem<span>Pro</span></div>
+        </a>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#servicos">Serviços</a></li>
+            <li><a href="#processo">Processo</a></li>
+            <li><a href="#portfolio">Portfólio</a></li>
+            <li><a href="#depoimentos">Depoimentos</a></li>
+            <li><a href="#contato">Contato</a></li>
+            <li><a href="#contato" class="nav-cta">Orçamento Grátis</a></li>
+        </ul>
+        <div class="hamburger" id="hamburger">
+            <span></span><span></span><span></span>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero" id="hero">
+        <div class="hero-bg-grid"></div>
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+        
+        <div class="hero-content">
+            <div class="hero-badge">
+                <i class="fas fa-shield-check"></i>
+                Profissional Certificado NR-10 & NR-35
+            </div>
+            <h1>Eletricidade com <span class="highlight">precisão</span> e segurança</h1>
+            <p>Da tomada ao quadro de energia, do projeto em CAD à instalação industrial. Soluções elétricas completas com garantia e atendimento 24h.</p>
+            <div class="hero-buttons">
+                <a href="#contato" class="btn-primary">
+                    <i class="fas fa-bolt"></i> Solicitar Orçamento
+                </a>
+                <a href="#servicos" class="btn-secondary">
+                    <i class="fas fa-arrow-down"></i> Ver Serviços
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-number" data-count="1250">0</div>
+                    <div class="stat-label">Projetos Concluídos</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-count="15">0</div>
+                    <div class="stat-label">Anos de Experiência</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" data-count="98">0</div>
+                    <div class="stat-label">% Satisfação</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hero-visual">
+            <div class="hero-circuit">
+                <div class="circuit-ring"></div>
+                <div class="circuit-ring"></div>
+                <div class="circuit-ring"></div>
+                <div class="circuit-center">⚡</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services -->
+    <section id="servicos">
+        <div class="section-header">
+            <div class="section-tag"><i class="fas fa-wrench"></i> Serviços</div>
+            <h2 class="section-title">Soluções Elétricas Completas</h2>
+            <p class="section-subtitle">Do mais simples reparo ao projeto industrial mais complexo, entregamos qualidade em cada fase.</p>
+        </div>
+        <div class="services-grid">
+            <div class="service-card" data-service="tomadas">
+                <div class="service-icon"><i class="fas fa-plug"></i></div>
+                <h3>Instalação de Tomadas</h3>
+                <p>Instalação e substituição de tomadas simples, duplas, triplo e 220V. Adequação de pontos conforme NBR 5410.</p>
+                <span class="service-tag">Residencial</span>
+            </div>
+            <div class="service-card" data-service="quadro">
+                <div class="service-icon"><i class="fas fa-bolt"></i></div>
+                <h3>Quadros Elétricos</h3>
+                <p>Montagem, reorganização e ampliação de quadros de distribuição. Disjuntores, DR, DPS e dimensionamento correto.</p>
+                <span class="service-tag">Residencial / Comercial</span>
+            </div>
+            <div class="service-card" data-service="cad">
+                <div class="service-icon"><i class="fas fa-drafting-compass"></i></div>
+                <h3>Projetos em CAD</h3>
+                <p>Projetos elétricos completos em AutoCAD e Revit: plantas, diagramas unifilares, memorial descritivo e ART.</p>
+                <span class="service-tag">Projetos</span>
+            </div>
+            <div class="service-card" data-service="iluminacao">
+                <div class="service-icon"><i class="fas fa-lightbulb"></i></div>
+                <h3>Iluminação LED</h3>
+                <p>Projeto e instalação de iluminação LED residencial, comercial e industrial. Luminárias, spots, fitas e downlights.</p>
+                <span class="service-tag">Iluminação</span>
+            </div>
+            <div class="service-card" data-service="predial">
+                <div class="service-icon"><i class="fas fa-building"></i></div>
+                <h3>Instalações Prediais</h3>
+                <p>Instalações elétricas completas em prédios: subestações, quadros de andar, intercomunicadores e automação.</p>
+                <span class="service-tag">Predial</span>
+            </div>
+            <div class="service-card" data-service="industrial">
+                <div class="service-icon"><i class="fas fa-industry"></i></div>
+                <h3>Manutenção Industrial</h3>
+                <p>Preventiva e corretiva em ambientes industriais. Motores, inversores, CLPs, painéis de comando e automação.</p>
+                <span class="service-tag">Industrial</span>
+            </div>
+            <div class="service-card" data-service="energiar">
+                <div class="service-icon"><i class="fas fa-solar-panel"></i></div>
+                <h3>Energia Solar</h3>
+                <p>Dimensionamento e instalação de sistemas fotovoltaicos residenciais e comerciais. Análise de viabilidade e ROI.</p>
+                <span class="service-tag">Renovável</span>
+            </div>
+            <div class="service-card" data-service="diagnostico">
+                <div class="service-icon"><i class="fas fa-search"></i></div>
+                <h3>Diagnóstico & Laudos</h3>
+                <p>Inspeção predial, medição de continuidade, resistência de isolamento, termografia e laudos técnicos.</p>
+                <span class="service-tag">Técnico</span>
+            </div>
+            <div class="service-card" data-service="urgencia">
+                <div class="service-icon"><i class="fas fa-ambulance"></i></div>
+                <h3>Emergência 24h</h3>
+                <p>Atendimento emergencial a qualquer hora. Curto-circuito, falta de energia, cheiro de queimado e situações de risco.</p>
+                <span class="service-tag">24 Horas</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Process -->
+    <section id="processo">
+        <div class="section-header">
+            <div class="section-tag"><i class="fas fa-route"></i> Como Funciona</div>
+            <h2 class="section-title">Nosso Processo</h2>
+            <p class="section-subtitle">Um fluxo claro e transparente, do primeiro contato à entrega final.</p>
+        </div>
+        <div class="process-timeline">
+            <div class="process-step">
+                <div class="process-number">1</div>
+                <div class="process-content">
+                    <h3>Contato & Diagnóstico</h3>
+                    <p>Você entra em contato pelo WhatsApp ou formulário. Realizamos um diagnóstico inicial gratuito para entender a necessidade.</p>
+                </div>
+            </div>
+            <div class="process-step">
+                <div class="process-number">2</div>
+                <div class="process-content">
+                    <h3>Orçamento Detalhado</h3>
+                    <p>Apresentamos um orçamento transparente com escopo, materiais, prazos e condições. Sem surpresas no final.</p>
+                </div>
+            </div>
+            <div class="process-step">
+                <div class="process-number">3</div>
+                <div class="process-content">
+                    <h3>Execução Profissional</h3>
+                    <p>Equipe certificada executa o serviço com materiais de primeira linha, seguindo todas as normas técnicas vigentes.</p>
+                </div>
+            </div>
+            <div class="process-step">
+                <div class="process-number">4</div>
+                <div class="process-content">
+                    <h3>Testes & Garantia</h3>
+                    <p>Testes completos de funcionamento e segurança. Entrega com garantia de serviço e suporte pós-instalação.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio -->
+    <section id="portfolio">
+        <div class="section-header">
+            <div class="section-tag"><i class="fas fa-images"></i> Portfólio</div>
+            <h2 class="section-title">Projetos Realizados</h2>
+            <p class="section-subtitle">Alguns dos trabalhos que já realizamos com excelência.</p>
+        </div>
+        <div class="portfolio-grid">
+            <div class="portfolio-item">
+                <div class="portfolio-bg">🏢</div>
+                <div class="portfolio-overlay">
+                    <h4>Edifício Comercial - 12 andares</h4>
+                    <span>Instalação predial completa</span>
+                </div>
+            </div>
+            <div class="portfolio-item">
+                <div class="portfolio-bg">🏭</div>
+                <div class="portfolio-overlay">
+                    <h4>Fábrica de Alimentos</h4>
+                    <span>Projeto industrial + automação</span>
+                </div>
+            </div>
+            <div class="portfolio-item">
+                <div class="portfolio-bg">🏠</div>
+                <div class="portfolio-overlay">
+                    <h4>Residência de Luxo</h4>
+                    <span>Automação + iluminação cênica</span>
+                </div>
+            </div>
+            <div class="portfolio-item">
+                <div class="portfolio-bg">☀️</div>
+                <div class="portfolio-overlay">
+                    <h4>Sistema Solar 50kWp</h4>
+                    <span>Comercial - payback 3 anos</span>
+                </div>
+            </div>
+            <div class="portfolio-item">
+                <div class="portfolio-bg">📐</div>
+                <div class="portfolio-overlay">
+                    <h4>Projeto CAD - Shopping</h4>
+                    <span>Elétrico completo + ART</span>
+                </div>
+            </div>
+            <div class="portfolio-item">
+                <div class="portfolio-bg">🔌</div>
+                <div class="portfolio-overlay">
+                    <h4>Reforma de Quadros</h4>
+                    <span>50 unidades residenciais</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section id="depoimentos">
+        <div class="section-header">
+            <div class="section-tag"><i class="fas fa-star"></i> Depoimentos</div>
+            <h2 class="section-title">O Que Dizem Nossos Clientes</h2>
+        </div>
+        <div class="testimonials-container">
+            <div class="testimonial-card active">
+                <div class="testimonial-stars">★★★★★</div>
+                <p class="testimonial-text">"Profissionalismo impecável. Refizeram todo o quadro elétrico do meu apartamento e a diferença foi absurda. Agora não há mais nenhum problema de queda de energia."</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">M</div>
+                    <div>
+                        <div class="testimonial-name">Mariana Silva</div>
+                        <div class="testimonial-role">Proprietária - Apartamento 42m²</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-stars">★★★★★</div>
+                <p class="testimonial-text">"Contratei para o projeto elétrico da nossa fábrica. O trabalho em CAD foi impecável, com prazos cumpridos e zero retrabalho na obra. Recomendo fortemente."</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">R</div>
+                    <div>
+                        <div class="testimonial-name">Ricardo Tanaka</div>
+                        <div class="testimonial-role">Diretor Industrial - AgroTech</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-card">
+                <div class="testimonial-stars">★★★★★</div>
+                <p class="testimonial-text">"Atendimento de emergência às 2h da manhã. Chegaram em 40 minutos, resolveram o curto-circuito e ainda fizeram uma vistoria completa sem custo extra."</p>
+                <div class="testimonial-author">
+                    <div class="testimonial-avatar">C</div>
+                    <div>
+                        <div class="testimonial-name">Carlos Mendes</div>
+                        <div class="testimonial-role">Gerente - Restaurante Sabor & Arte</div>
+                    </div>
+                </div>
+            </div>
+            <div class="testimonial-dots">
+                <div class="testimonial-dot active" data-index="0"></div>
+                <div class="testimonial-dot" data-index="1"></div>
+                <div class="testimonial-dot" data-index="2"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2>Pronto para resolver seu problema elétrico?</h2>
+            <p>Orçamento gratuito e sem compromisso. Atendimento em toda a região metropolitana.</p>
+            <a href="#contato" class="btn-primary">
+                <i class="fas fa-phone"></i> Falar Agora
+            </a>
+        </div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contato">
+        <div class="section-header">
+            <div class="section-tag"><i class="fas fa-envelope"></i> Contato</div>
+            <h2 class="section-title">Solicite Seu Orçamento</h2>
+            <p class="section-subtitle">Preencha o formulário e retornaremos em até 30 minutos em horário comercial.</p>
+        </div>
+        <div class="contact-wrapper">
+            <div class="contact-info">
+                <h3>Fale Conosco</h3>
+                <p>Estamos prontos para atender sua necessidade elétrica, seja residencial, comercial ou industrial.</p>
+                <div class="contact-item">
+                    <div class="contact-item-icon"><i class="fab fa-whatsapp"></i></div>
+                    <div class="contact-item-text">
+                        <h4>WhatsApp</h4>
+                        <p>(11) 99999-9999</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-item-icon"><i class="fas fa-phone"></i></div>
+                    <div class="contact-item-text">
+                        <h4>Telefone</h4>
+                        <p>(11) 3333-4444</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-item-icon"><i class="fas fa-envelope"></i></div>
+                    <div class="contact-item-text">
+                        <h4>E-mail</h4>
+                        <p>contato@voltagempro.com.br</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-item-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="contact-item-text">
+                        <h4>Atendimento</h4>
+                        <p>Região Metropolitana de São Paulo</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <div class="contact-item-icon"><i class="fas fa-clock"></i></div>
+                    <div class="contact-item-text">
+                        <h4>Horário</h4>
+                        <p>Seg-Sáb: 7h às 19h | Emergência: 24h</p>
+                    </div>
+                </div>
+            </div>
+            <form class="contact-form" id="contactForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Nome</label>
+                        <input type="text" placeholder="Seu nome completo" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Telefone</label>
+                        <input type="tel" placeholder="(11) 99999-9999" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Serviço Desejado</label>
+                    <select required>
+                        <option value="">Selecione o serviço</option>
+                        <option>Instalação de Tomadas</option>
+                        <option>Quadro Elétrico</option>
+                        <option>Projeto em CAD</option>
+                        <option>Iluminação LED</option>
+                        <option>Instalação Predial</option>
+                        <option>Manutenção Industrial</option>
+                        <option>Energia Solar</option>
+                        <option>Diagnóstico / Laudo</option>
+                        <option>Emergência</option>
+                        <option>Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Descreva sua Necessidade</label>
+                    <textarea placeholder="Conte-nos o que precisa..."></textarea>
+                </div>
+                <button type="submit" class="form-submit">
+                    <i class="fas fa-paper-plane"></i> Enviar Solicitação
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <a href="#" class="nav-logo">
+                    <div class="nav-logo-icon"><i class="fas fa-bolt"></i></div>
+                    <div class="nav-logo-text">Voltagem<span>Pro</span></div>
+                </a>
+                <p>Soluções elétricas completas com segurança, qualidade e garantia. Atendimento residencial, comercial e industrial.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Serviços</h4>
+                <a href="#">Tomadas & Pontos</a>
+                <a href="#">Quadros Elétricos</a>
+                <a href="#">Projetos CAD</a>
+                <a href="#">Energia Solar</a>
+                <a href="#">Manutenção Industrial</a>
+            </div>
+            <div class="footer-col">
+                <h4>Empresa</h4>
+                <a href="#">Sobre Nós</a>
+                <a href="#">Portfólio</a>
+                <a href="#">Depoimentos</a>
+                <a href="#">Blog</a>
+            </div>
+            <div class="footer-col">
+                <h4>Suporte</h4>
+                <a href="#">Emergência 24h</a>
+                <a href="#">Perguntas Frequentes</a>
+                <a href="#">Política de Privacidade</a>
+                <a href="#">Termos de Uso</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 VoltagemPro. Todos os direitos reservados. | CREA-SP 0000000000</p>
+        </div>
+    </footer>
+
+    <!-- WhatsApp Float -->
+    <a href="https://wa.me/5511999999999?text=Olá! Gostaria de um orçamento." class="whatsapp-float" target="_blank">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="serviceModal">
+        <div class="modal">
+            <button class="modal-close" id="modalClose"><i class="fas fa-times"></i></button>
+            <h3 id="modalTitle"></h3>
+            <p id="modalDesc"></p>
+            <a href="#contato" class="btn-primary" style="display:inline-flex; width:100%; justify-content:center;" id="modalCta">
+                <i class="fas fa-bolt"></i> Solicitar Orçamento
+            </a>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">
+        <div class="toast-icon"><i class="fas fa-check"></i></div>
+        <div class="toast-text">Solicitação enviada com sucesso! Retornaremos em breve.</div>
+    </div>
+
     <script>
-        const canvas = document.getElementById("renderCanvas");
-        const ctx = canvas.getContext("2d");
-        const width = canvas.width;
-        const height = canvas.height;
-        const vertices = [
-            {x: -1, y: -1, z: -1}, {x: 1, y: -1, z: -1}, {x: 1, y: 1, z: -1}, {x: -1, y: 1, z: -1},
-            {x: -1, y: -1, z: 1},  {x: 1, y: -1, z: 1},  {x: 1, y: 1, z: 1},  {x: -1, y: 1, z: 1}
-        ];
-        const faces = [
-            { indices: [0, 1, 2, 3], color: "#ff4136" }, // Trás
-            { indices: [1, 5, 6, 2], color: "#0074d9" }, // Direita
-            { indices: [5, 4, 7, 6], color: "#2ecc40" }, // Frente
-            { indices: [4, 0, 3, 7], color: "#ffdc00" }, // Esquerda
-            { indices: [4, 5, 1, 0], color: "#b10dc9" }, // Topo
-            { indices: [3, 2, 6, 7], color: "#01ff70" }  // Fundo
-        ];
-        let angleX = 0.01;
-        let angleY = 0.015;
-        function project(vertex) {
-            const fov = 400;         
-            const viewerDistance = 4; 
-            const factor = fov / (viewerDistance + vertex.z);
-            const x2d = vertex.x * factor + width / 2;
-            const y2d = vertex.y * factor + height / 2;
-            return { x: x2d, y: y2d, z: vertex.z };
+        // ===== PARTICLES =====
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         }
-        function update() {
-            ctx.clearRect(0, 0, width, height);
-            const radX = angleX;
-            const radY = angleY;
-            const cosX = Math.cos(radX), sinX = Math.sin(radX);
-            const cosY = Math.cos(radY), sinY = Math.sin(radY);
-            const transformedVertices = vertices.map(v => {
-                // Rotação no eixo Y
-                let x1 = v.x * cosY - v.z * sinY;
-                let z1 = v.x * sinY + v.z * cosY;
-                let y2 = v.y * cosX - z1 * sinX;
-                let z2 = v.y * sinX + z1 * cosX;
-                return project({ x: x1, y: y2, z: z2 });
-            });
-            faces.forEach(face => {
-                face.avgZ = (
-                    transformedVertices[face.indices[0]].z +
-                    transformedVertices[face.indices[1]].z +
-                    transformedVertices[face.indices[2]].z +
-                    transformedVertices[face.indices[3]].z
-                ) / 4;
-            });
-            faces.sort((a, b) => b.avgZ - a.avgZ);
-            faces.forEach(face => {
-                ctx.beginPath();
-                ctx.moveTo(transformedVertices[face.indices[0]].x, transformedVertices[face.indices[0]].y);
-                for (let i = 1; i < 4; i++) {
-                    ctx.lineTo(transformedVertices[face.indices[i]].x, transformedVertices[face.indices[i]].y);
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.5 + 0.1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.reset();
                 }
-                ctx.closePath();
-                ctx.fillStyle = face.color;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(245, 158, 11, ${this.opacity})`;
                 ctx.fill();
-                ctx.strokeStyle = "#11141d";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            });
-            angleX += 0.01;
-            angleY += 0.013;
-            requestAnimationFrame(update);
+            }
         }
-        update();
+
+        for (let i = 0; i < 60; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            // Draw connections
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(245, 158, 11, ${0.05 * (1 - dist / 120)})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // ===== CURSOR GLOW =====
+        const cursorGlow = document.getElementById('cursorGlow');
+        document.addEventListener('mousemove', (e) => {
+            cursorGlow.style.left = e.clientX + 'px';
+            cursorGlow.style.top = e.clientY + 'px';
+        });
+
+        // ===== NAVBAR SCROLL =====
+        const navbar = document.getElementById('navbar');
+        const scrollProgress = document.getElementById('scrollProgress');
+
+        window.addEventListener('scroll', () => {
+            const scrollY = window.scrollY;
+            navbar.classList.toggle('scrolled', scrollY > 50);
+            const progress = (scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+            scrollProgress.style.width = progress + '%';
+        });
+
+        // ===== HAMBURGER =====
+        const hamburger = document.getElementById('hamburger');
+        const navLinks = document.getElementById('navLinks');
+
+        hamburger.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            hamburger.classList.toggle('active');
+        });
+
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+                hamburger.classList.remove('active');
+            });
+        });
+
+        // ===== COUNTER ANIMATION =====
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-number');
+            counters.forEach(counter => {
+                const target = parseInt(counter.dataset.count);
+                const duration = 2000;
+                const start = performance.now();
+
+                function update(now) {
+                    const elapsed = now - start;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    counter.textContent = Math.floor(eased * target).toLocaleString('pt-BR');
+                    if (progress < 1) requestAnimationFrame(update);
+                }
+                requestAnimationFrame(update);
+            });
+        }
+
+        // Trigger counters when hero is visible
+        let countersAnimated = false;
+        const heroObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && !countersAnimated) {
+                countersAnimated = true;
+                setTimeout(animateCounters, 500);
+            }
+        }, { threshold: 0.5 });
+        heroObserver.observe(document.querySelector('.hero-stats'));
+
+        // ===== SCROLL REVEAL - PROCESS STEPS =====
+        const processSteps = document.querySelectorAll('.process-step');
+        const processObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, index * 150);
+                }
+            });
+        }, { threshold: 0.3 });
+        processSteps.forEach(step => processObserver.observe(step));
+
+        // ===== TESTIMONIALS SLIDER =====
+        const testimonialCards = document.querySelectorAll('.testimonial-card');
+        const testimonialDots = document.querySelectorAll('.testimonial-dot');
+        let currentTestimonial = 0;
+        let testimonialInterval;
+
+        function showTestimonial(index) {
+            testimonialCards.forEach(c => c.classList.remove('active'));
+            testimonialDots.forEach(d => d.classList.remove('active'));
+            testimonialCards[index].classList.add('active');
+            testimonialDots[index].classList.add('active');
+            currentTestimonial = index;
+        }
+
+        testimonialDots.forEach(dot => {
+            dot.addEventListener('click', () => {
+                showTestimonial(parseInt(dot.dataset.index));
+                resetTestimonialInterval();
+            });
+        });
+
+        function resetTestimonialInterval() {
+            clearInterval(testimonialInterval);
+            testimonialInterval = setInterval(() => {
+                showTestimonial((currentTestimonial + 1) % testimonialCards.length);
+            }, 5000);
+        }
+        resetTestimonialInterval();
+
+        // ===== SERVICE MODAL =====
+        const serviceModal = document.getElementById('serviceModal');
+        const modalClose = document.getElementById('modalClose');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalDesc = document.getElementById('modalDesc');
+
+        const serviceData = {
+            'tomadas': { title: 'Instalação de Tomadas', desc: 'Instalação e substituição de tomadas simples, duplas, triplo e 220V. Adequação de pontos conforme NBR 5410. A partir de R$ 50 por ponto.' },
+            'quadro': { title: 'Quadros Elétricos', desc: 'Montagem, reorganização e ampliação de quadros de distribuição. Dimensionamento de disjuntores, DR e DPS. A partir de R$ 350.' },
+            'cad': { title: 'Projetos em CAD', desc: 'Projetos elétricos completos em AutoCAD e Revit: plantas de pontos, diagramas unifilares, memorial descritivo e emissão de ART. A partir de R$ 800.' },
+            'iluminacao': { title: 'Iluminação LED', desc: 'Projeto e instalação de iluminação LED: luminárias, spots, fitas, downlights e iluminação cênica. A partir de R$ 150.' },
+            'predial': { title: 'Instalações Prediais', desc: 'Instalações elétricas completas em edificações: subestações, quadros de andar, intercomunicadores e sistemas de automação.' },
+            'industrial': { title: 'Manutenção Industrial', desc: 'Manutenção preventiva e corretiva: motores, inversores de frequência, CLPs, painéis de comando e sistemas de automação industrial.' },
+            'energiar': { title: 'Energia Solar', desc: 'Dimensionamento e instalação de sistemas fotovoltaicos. Análise de viabilidade, projeto, instalação e homologação junto à concessionária.' },
+            'diagnostico': { title: 'Diagnóstico & Laudos', desc: 'Inspeção predial, medição de continuidade, resistência de isolamento, termografia infravermelha e emissão de laudos técnicos.' },
+            'urgencia': { title: 'Emergência 24h', desc: 'Atendimento emergencial a qualquer hora: curto-circuito, falta de energia, cheiro de queimado, faíscas e situações de risco iminente.' }
+        };
+
+        document.querySelectorAll('.service-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const key = card.dataset.service;
+                const data = serviceData[key];
+                if (data) {
+                    modalTitle.textContent = data.title;
+                    modalDesc.textContent = data.desc;
+                    serviceModal.classList.add('active');
+                }
+            });
+        });
+
+        modalClose.addEventListener('click', () => serviceModal.classList.remove('active'));
+        serviceModal.addEventListener('click', (e) => {
+            if (e.target === serviceModal) serviceModal.classList.remove('active');
+        });
+        document.getElementById('modalCta').addEventListener('click', () => {
+            serviceModal.classList.remove('active');
+        });
+
+        // ===== FORM SUBMIT =====
+        document.getElementById('contactForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+            e.target.reset();
+        });
+
+        // ===== SMOOTH SCROLL =====
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
     </script>
 </body>
-</html>
+</html>   
