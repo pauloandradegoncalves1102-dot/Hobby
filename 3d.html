@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Átomo 3D</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; }
+
+        #info-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(10, 15, 30, 0.92);
+            border: 1px solid rgba(100, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            color: #fff;
+            min-width: 280px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(50, 120, 255, 0.2);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        #info-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #info-panel h2 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: #64b5f6;
+            text-shadow: 0 0 10px rgba(100, 180, 255, 0.5);
+        }
+        #info-panel .property {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.9em;
+        }
+        #info-panel .property:last-child { border-bottom: none; }
+        #info-panel .label { color: #90a4ae; }
+        #info-panel .value { color: #e0f7fa; font-weight: 600; }
+
+        #title {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            z-index: 10;
+        }
+        #title h1 {
+            font-size: 1.5em;
+            text-shadow: 0 0 20px rgba(100, 180, 255, 0.8);
+        }
+        #title p {
+            color: #78909c;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        #legend {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(10, 15, 30, 0.85);
+            border: 1px solid rgba(100, 180, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            color: #fff;
+            backdrop-filter: blur(10px);
+        }
+        #legend h3 { font-size: 0.9em; margin-bottom: 8px; color: #b0bec5; }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 0.85em;
+        }
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        #tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+            border: 1px solid rgba(100, 180, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="title">
+        <h1>Átomo 3D By AG</h1>
+    </div>
+
+    <div id="info-panel">
+        <h2 id="panel-title">Partícula</h2>
+        <div id="panel-body"></div>
+    </div>
+
+    <div id="legend">
+        <h3>Legenda</h3>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff4444; color:#ff4444;"></div>Próton (+)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#aaaacc; color:#aaaacc;"></div>Nêutron (0)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#44aaff; color:#44aaff;"></div>Elétron (−)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#44ff88; color:#44ff88;"></div>Orbital</div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // ============ CONFIGURAÇÃO DO ÁTOMO ============
+        const ATOM_CONFIG = {
+            name: "Oxigênio (O)",
+            symbol: "O",
+            atomicNumber: 8,
+            massNumber: 16,
+            protons: 8,
+            neutrons: 8,
+            shells: [2, 6],  // elétrons por camada
+            electronConfig: "1s² 2s² 2p⁴",
+            electronegativity: "3.44",
+            ionizationEnergy: "13.618 eV",
+            radius: "48 pm (covalente)"
+        };
+       
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000011, 0.0008);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+        camera.position.set(0, 40, 120);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 20;
+        controls.maxDistance = 500;
+
+        // Iluminação
+        const ambientLight = new THREE.AmbientLight(0x222244, 0.5);
+        scene.add(ambientLight);
+
+        const pointLight1 = new THREE.PointLight(0xffffff, 1.5, 500);
+        pointLight1.position.set(100, 100, 100);
+        pointLight1.castShadow = true;
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x4488ff, 0.8, 400);
+        pointLight2.position.set(-100, -50, -100);
+        scene.add(pointLight2);
+
+        const pointLight3 = new THREE.PointLight(0xff8844, 0.4, 300);
+        pointLight3.position.set(0, -100, 50);
+        scene.add(pointLight3);
+
+        
+        const nucleusLight = new THREE.PointLight(0xff6644, 2, 50);
+        nucleusLight.position.set(0, 0, 0);
+        scene.add(nucleusLight);
+
+        
+        function createStars() {
+            const starsGeo = new THREE.BufferGeometry();
+            const starsCount = 3000;
+            const positions = new Float32Array(starsCount * 3);
+            const colors = new Float32Array(starsCount * 3);
+            const sizes = new Float32Array(starsCount);
+
+            for (let i = 0; i < starsCount; i++) {
+                const r = 500 + Math.random() * 1500;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                positions[i*3+2] = r * Math.cos(phi);
+
+                const color = new THREE.Color().setHSL(0.6 + Math.random()*0.1, 0.3, 0.7 + Math.random()*0.3);
+                colors[i*3] = color.r;
+                colors[i*3+1] = color.g;
+                colors[i*3+2] = color.b;
+                sizes[i] = 1 + Math.random() * 2;
+            }
+
+            starsGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            starsGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            starsGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+            const starsMat = new THREE.PointsMaterial({
+                size: 2,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                sizeAttenuation: true
+            });
+
+            const stars = new THREE.Points(starsGeo, starsMat);
+            scene.add(stars);
+            return stars;
+        }
+        const stars = createStars();
+
+        
+        const nucleusGroup = new THREE.Group();
+        scene.add(nucleusGroup);
+
+        const pickableObjects = [];
+        const nucleusRadius = 12;
+
+       
+        function fibonacciSphere(n, radius) {
+            const points = [];
+            const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+            for (let i = 0; i < n; i++) {
+                const y = 1 - (i / (n - 1)) * 2;
+                const r = Math.sqrt(1 - y * y);
+                const theta = goldenAngle * i;
+                points.push(new THREE.Vector3(
+                    Math.cos(theta) * r,
+                    y,
+                    Math.sin(theta) * r
+                ).multiplyScalar(radius));
+            }
+            return points;
+        }
+
+        
+        const protonMat = new THREE.MeshPhysicalMaterial({
+            color: 0xff3333,
+            emissive: 0x661111,
+            metalness: 0.3,
+            roughness: 0.2,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1
+        });
+
+        const neutronMat = new THREE.MeshPhysicalMaterial({
+            color: 0x99aacc,
+            emissive: 0x222244,
+            metalness: 0.5,
+            roughness: 0.3,
+            clearcoat: 0.8,
+            clearcoatRoughness: 0.2
+        });
+
+        const electronMat = new THREE.MeshPhysicalMaterial({
+            color: 0x44aaff,
+            emissive: 0x1155aa,
+            metalness: 0.2,
+            roughness: 0.1,
+            clearcoat: 1.0,
+            emissiveIntensity: 1.5
+        });
+
+        const particleRadius = 2.2;
+        const particleGeo = new THREE.SphereGeometry(particleRadius, 32, 32);
+
+       
+        const protonPositions = fibonacciSphere(ATOM_CONFIG.protons, nucleusRadius * 0.6);
+        protonPositions.forEach((pos, i) => {
+            const proton = new THREE.Mesh(particleGeo, protonMat.clone());
+            proton.position.copy(pos);
+            proton.castShadow = true;
+            proton.receiveShadow = true;
+            proton.userData = {
+                type: 'proton',
+                index: i + 1,
+                name: `Próton #${i + 1}`,
+                charge: '+1 e (+1.602 × 10⁻¹⁹ C)',
+                mass: '1.6726 × 10⁻²⁷ kg',
+                massUnit: '1.007276 u',
+                radius: '0.84 × 10⁻¹⁵ m',
+                spin: '1/2',
+                quarks: 'uud (2 up + 1 down)',
+                location: 'Núcleo atômico',
+                stability: 'Estável (não decai)',
+                force: 'Força nuclear forte + eletromagnética'
+            };
+            nucleusGroup.add(proton);
+            pickableObjects.push(proton);
+        });
+
+       
+        const neutronPositions = fibonacciSphere(ATOM_CONFIG.neutrons, nucleusRadius * 0.6);
+        // Deslocar levemente para não sobrepor
+        neutronPositions.forEach((pos, i) => {
+            pos.x += (Math.random() - 0.5) * 2;
+            pos.y += (Math.random() - 0.5) * 2;
+            pos.z += (Math.random() - 0.5) * 2;
+        });
+
+        neutronPositions.forEach((pos, i) => {
+            const neutron = new THREE.Mesh(particleGeo, neutronMat.clone());
+            neutron.position.copy(pos);
+            neutron.castShadow = true;
+            neutron.receiveShadow = true;
+            neutron.userData = {
+                type: 'neutron',
+                index: i + 1,
+                name: `Nêutron #${i + 1}`,
+                charge: '0 (neutro)',
+                mass: '1.6749 × 10⁻²⁷ kg',
+                massUnit: '1.008665 u',
+                radius: '~1.2 × 10⁻¹⁵ m',
+                spin: '1/2',
+                quarks: 'udd (1 up + 2 down)',
+                location: 'Núcleo atômico',
+                stability: 'Estável no núcleo; livre: T½ ≈ 880s',
+                force: 'Força nuclear forte'
+            };
+            nucleusGroup.add(neutron);
+            pickableObjects.push(neutron);
+        });
+
+        
+        const glowGeo = new THREE.SphereGeometry(nucleusRadius * 1.3, 32, 32);
+        const glowMat = new THREE.MeshBasicMaterial({
+            color: 0xff4422,
+            transparent: true,
+            opacity: 0.08,
+            side: THREE.BackSide
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        nucleusGroup.add(glow);
+
+        
+        const electronGroups = [];
+        const shellRadii = [25, 42];
+        const shellTilts = [
+            { x: 0.3, z: 0.1 },
+            { x: -0.5, z: 0.4 }
+        ];
+
+        ATOM_CONFIG.shells.forEach((electronCount, shellIndex) => {
+            const shellGroup = new THREE.Group();
+            shellGroup.rotation.x = shellTilts[shellIndex].x;
+            shellGroup.rotation.z = shellTilts[shellIndex].z;
+            scene.add(shellGroup);
+
+            
+            const orbitRadius = shellRadii[shellIndex];
+            const orbitGeo = new THREE.TorusGeometry(orbitRadius, 0.3, 8, 128);
+            const orbitMat = new THREE.MeshBasicMaterial({
+                color: 0x44ff88,
+                transparent: true,
+                opacity: 0.3,
+                emissive: 0x22ff66
+            });
+            const orbit = new THREE.Mesh(orbitGeo, orbitMat);
+            orbit.rotation.x = Math.PI / 2;
+            shellGroup.add(orbit);
+
+            
+            const electrons = [];
+            for (let i = 0; i < electronCount; i++) {
+                const angle = (i / electronCount) * Math.PI * 2;
+                const electron = new THREE.Mesh(
+                    new THREE.SphereGeometry(1.5, 24, 24),
+                    electronMat.clone()
+                );
+                electron.position.set(
+                    Math.cos(angle) * orbitRadius,
+                    0,
+                    Math.sin(angle) * orbitRadius
+                );
+                electron.castShadow = true;
+                electron.userData = {
+                    type: 'electron',
+                    index: i + 1,
+                    shell: shellIndex + 1,
+                    name: `Elétron #${i + 1} (Camada ${shellIndex + 1})`,
+                    charge: '-1 e (-1.602 × 10⁻¹⁹ C)',
+                    mass: '9.109 × 10⁻³¹ kg',
+                    massUnit: '0.000549 u',
+                    radius: '2.82 × 10⁻¹⁵ m (clássico)',
+                    spin: '1/2 (fermião)',
+                    speed: `~${(2.18e6 / (shellIndex + 1)).toExponential(2)} m/s`,
+                    energy: `${-13.6 / (shellIndex + 1) ** 2} eV`,
+                    location: `Orbital da camada ${shellIndex + 1}`,
+                    quantumNumbers: `n=${shellIndex + 1}, l=${shellIndex}, m_l, m_s`
+                };
+                shellGroup.add(electron);
+                electrons.push({ mesh: electron, angle: angle, radius: orbitRadius });
+                pickableObjects.push(electron);
+            }
+
+            electronGroups.push({
+                group: shellGroup,
+                electrons: electrons,
+                speed: 0.8 / (shellIndex + 1)
+            });
+        });
+
+    
+        const forceLines = [];
+        for (let i = 0; i < 6; i++) {
+            const lineGeo = new THREE.BufferGeometry();
+            const points = [];
+            const startAngle = (i / 6) * Math.PI * 2;
+            for (let t = 0; t <= 1; t += 0.05) {
+                const r = nucleusRadius * 1.3 + t * 5;
+                points.push(new THREE.Vector3(
+                    Math.cos(startAngle) * r,
+                    Math.sin(startAngle * 2) * 3,
+                    Math.sin(startAngle) * r
+                ));
+            }
+            lineGeo.setFromPoints(points);
+            const lineMat = new THREE.LineBasicMaterial({
+                color: 0xff6644,
+                transparent: true,
+                opacity: 0.15
+            });
+            const line = new THREE.Line(lineGeo, lineMat);
+            nucleusGroup.add(line);
+            forceLines.push(line);
+        }
+
+        
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let hoveredObject = null;
+        let originalMaterial = null;
+
+        const infoPanel = document.getElementById('info-panel');
+        const panelTitle = document.getElementById('panel-title');
+        const panelBody = document.getElementById('panel-body');
+        const tooltip = document.getElementById('tooltip');
+
+        function updateInfoPanel(data) {
+            panelTitle.textContent = data.name;
+
+            const colorMap = {
+                proton: '#ff6666',
+                neutron: '#aabbdd',
+                electron: '#66bbff'
+            };
+            panelTitle.style.color = colorMap[data.type];
+
+            let html = '';
+            const properties = [
+                ['Carga', data.charge],
+                ['Massa', data.mass],
+                ['Massa (u)', data.massUnit],
+                ['Raio', data.radius],
+                ['Spin', data.spin],
+                ['Quarks', data.quarks || '—'],
+                ['Localização', data.location],
+                ['Estabilidade', data.stability || '—']
+            ];
+
+            if (data.type === 'electron') {
+                properties.push(['Velocidade', data.speed]);
+                properties.push(['Energia', data.energy]);
+                properties.push(['Números Quânticos', data.quantumNumbers]);
+            }
+            if (data.type === 'proton') {
+                properties.push(['Força', data.force]);
+            }
+            if (data.type === 'neutron') {
+                properties.push(['Força', data.force]);
+            }
+
+            properties.forEach(([label, value]) => {
+                html += `<div class="property"><span class="label">${label}</span><span class="value">${value}</span></div>`;
+            });
+
+            panelBody.innerHTML = html;
+            infoPanel.classList.add('visible');
+        }
+
+        function hideInfoPanel() {
+            infoPanel.classList.remove('visible');
+            tooltip.style.opacity = '0';
+        }
+
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(pickableObjects);
+
+            
+            if (hoveredObject && (!intersects.length || intersects[0].object !== hoveredObject)) {
+                if (originalMaterial) {
+                    hoveredObject.material = originalMaterial;
+                    originalMaterial = null;
+                }
+                hoveredObject = null;
+            }
+
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                if (obj !== hoveredObject) {
+                    hoveredObject = obj;
+                    originalMaterial = obj.material;
+                    const hoverMat = obj.material.clone();
+                    hoverMat.emissiveIntensity = 3;
+                    hoverMat.emissive = new THREE.Color(0xffffff);
+                    obj.material = hoverMat;
+                    document.body.style.cursor = 'pointer';
+                }
+                updateInfoPanel(obj.userData);
+
+                
+                tooltip.textContent = obj.userData.name;
+                tooltip.style.opacity = '1';
+                tooltip.style.left = (event.clientX + 15) + 'px';
+                tooltip.style.top = (event.clientY - 10) + 'px';
+            } else {
+                hideInfoPanel();
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+            const delta = clock.getDelta();
+
+       
+            nucleusGroup.rotation.y = t * 0.2;
+            nucleusGroup.rotation.x = Math.sin(t * 0.1) * 0.1;
+
+         
+            const pulse = 1 + Math.sin(t * 2) * 0.03;
+            nucleusGroup.scale.set(pulse, pulse, pulse);
+
+            glowMat.opacity = 0.06 + Math.sin(t * 3) * 0.03;
+            nucleusLight.intensity = 1.5 + Math.sin(t * 2) * 0.5;
+
+            electronGroups.forEach(shell => {
+                shell.electrons.forEach(e => {
+                    e.angle += shell.speed * 0.02;
+                    e.mesh.position.x = Math.cos(e.angle) * e.radius;
+                    e.mesh.position.z = Math.sin(e.angle) * e.radius;
+                    // Leve oscilação vertical
+                    e.mesh.position.y = Math.sin(e.angle * 2 + t) * 0.5;
+                });
+            });
+
+       
+            forceLines.forEach((line, i) => {
+                line.material.opacity = 0.1 + Math.sin(t * 2 + i) * 0.05;
+            });
+
+        
+            stars.rotation.y = t * 0.005;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>   

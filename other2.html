@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intranet RH & Custos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#f0f2f5;color:#1a1a2e}
+header{background:#1a1a2e;color:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:1.3rem}
+header .actions{display:flex;gap:8px}
+header .actions button{background:#4a4a6a;border:none;color:#fff;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:.85rem}
+header .actions button:hover{background:#5a5a7a}
+nav{display:flex;background:#fff;border-bottom:1px solid #e0e0e0;overflow-x:auto}
+nav button{padding:12px 20px;border:none;background:none;cursor:pointer;font-size:.9rem;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.active{border-bottom-color:#4a6cf7;color:#4a6cf7;font-weight:600}
+nav button:hover{background:#f5f5f5}
+main{padding:24px;max-width:1200px;margin:0 auto}
+.card{background:#fff;border-radius:10px;padding:24px;margin-bottom:20px;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.card h2{font-size:1.1rem;margin-bottom:16px;color:#1a1a2e;border-bottom:2px solid #4a6cf7;padding-bottom:8px}
+.card h3{font-size:.95rem;margin:16px 0 10px;color:#4a6cf7}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+label{display:block;font-size:.8rem;font-weight:600;color:#555;margin-bottom:4px}
+input,select,textarea{width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:6px;font-size:.9rem;transition:border .2s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#4a6cf7}
+textarea{resize:vertical;min-height:60px}
+.btn{padding:10px 20px;border:none;border-radius:6px;cursor:pointer;font-size:.9rem;font-weight:600}
+.btn-primary{background:#4a6cf7;color:#fff}
+.btn-primary:hover{background:#3a5ce7}
+.btn-danger{background:#e74c3c;color:#fff}
+.btn-danger:hover{background:#c0392b}
+.btn-success{background:#27ae60;color:#fff}
+.btn-success:hover{background:#219a52}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+.btn-row{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:#f8f9fa;padding:10px;text-align:left;border-bottom:2px solid #e0e0e0;font-weight:600}
+td{padding:10px;border-bottom:1px solid #eee}
+tr:hover td{background:#f8f9ff}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:.75rem;font-weight:600}
+.badge-clt{background:#d4edda;color:#155724}
+.badge-terceirizado{background:#fff3cd;color:#856404}
+.badge-pj{background:#cce5ff;color:#004085}
+.badge-estagiario{background:#e2d9f3;color:#4a2d8a}
+.badge-temporario{background:#f8d7da;color:#721c24}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+.stat-card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.08);text-align:center}
+.stat-card .value{font-size:1.6rem;font-weight:700;color:#4a6cf7}
+.stat-card .label{font-size:.8rem;color:#777;margin-top:4px}
+.stat-card.alert .value{color:#e74c3c}
+.section-tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+.section-tabs button{padding:8px 16px;border:1px solid #ddd;background:#f8f9fa;border-radius:6px;cursor:pointer;font-size:.85rem}
+.section-tabs button.active{background:#4a6cf7;color:#fff;border-color:#4a6cf7}
+.checkbox-row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.checkbox-row input{width:auto}
+.checkbox-row label{margin:0;font-size:.85rem}
+.alert-box{padding:12px 16px;border-radius:6px;margin:10px 0;font-size:.85rem}
+.alert-warn{background:#fff3cd;color:#856404;border:1px solid #ffc107}
+.alert-info{background:#e7f3ff;color:#004085;border:1px solid #4a6cf7}
+.search-bar{display:flex;gap:10px;margin-bottom:16px}
+.search-bar input{flex:1}
+.empty-state{text-align:center;padding:40px;color:#999}
+.empty-state .icon{font-size:3rem;margin-bottom:10px}
+@media(max-width:768px){.grid,.grid-2,.grid-3{grid-template-columns:1fr}.stat-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏢 Intranet — RH & Controle de Custos</h1>
+  <div class="actions">
+    <button onclick="exportData()">📥 Exportar JSON</button>
+    <button onclick="document.getElementById('importFile').click()">📤 Importar JSON</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('funcionarios',this)">👥 Funcionários</button>
+  <button onclick="showTab('custos',this)">💰 Gastos</button>
+  <button onclick="showTab('dashboard',this)">📊 Dashboard</button>
+  <button onclick="showTab('relatorios',this)">📋 Relatórios</button>
+</nav>
+
+<main id="content"></main>
+
+<script>
+// ============ DATA LAYER ============
+let DB = JSON.parse(localStorage.getItem('intranet_db') || '{"funcionarios":[],"gastos":[],"config":{"nomeEmpresa":"","cnpj":""}}');
+
+function save(){ localStorage.setItem('intranet_db', JSON.stringify(DB)); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+
+// ============ TAB NAVIGATION ============
+function showTab(tab, btn){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  render(tab);
+}
+
+function render(tab){
+  const c = document.getElementById('content');
+  switch(tab){
+    case 'funcionarios': c.innerHTML = renderFuncionarios(); break;
+    case 'custos': c.innerHTML = renderCustos(); break;
+    case 'dashboard': c.innerHTML = renderDashboard(); break;
+    case 'relatorios': c.innerHTML = renderRelatorios(); break;
+  }
+}
+
+// ============ FUNCIONÁRIOS ============
+let editingId = null;
+let searchQuery = '';
+let funcSection = 'pessoais';
+
+function renderFuncionarios(){
+  if(editingId){
+    if(editingId === '__new__') return renderFormFunc({});
+    const f = DB.funcionarios.find(x=>x.id===editingId);
+    if(f) return renderFormFunc(f);
+  }
+  const list = DB.funcionarios.filter(f=>{
+    const q = searchQuery.toLowerCase();
+    return !q || f.nome?.toLowerCase().includes(q) || f.cpf?.includes(q) || f.cargo?.toLowerCase().includes(q);
+  });
+  return `
+    <div class="card">
+      <div class="btn-row" style="margin-top:0;margin-bottom:16px">
+        <button class="btn btn-primary" onclick="newFunc()">+ Novo Funcionário</button>
+      </div>
+      <div class="search-bar">
+        <input placeholder="Buscar por nome, CPF ou cargo..." value="${searchQuery}" oninput="searchQuery=this.value;render('funcionarios')">
+      </div>
+      ${list.length===0 ? '<div class="empty-state"><div class="icon">👥</div><p>Nenhum funcionário cadastrado</p></div>' : `
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Nome</th><th>CPF</th><th>Cargo</th><th>Setor</th><th>Tipo</th><th>Salário</th><th>Terceirizadora</th><th>Ações</th></tr></thead>
+        <tbody>${list.map(f=>`
+          <tr>
+            <td>${f.nome||'-'}</td>
+            <td>${f.cpf||'-'}</td>
+            <td>${f.cargo||'-'}</td>
+            <td>${f.setor||'-'}</td>
+            <td><span class="badge badge-${f.tipoContrato?.toLowerCase()}">${f.tipoContrato||'-'}</span></td>
+            <td>R$ ${(f.salario||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+            <td>${f.empresaTerceirizadora||'-'}</td>
+            <td>
+              <button class="btn btn-sm btn-primary" onclick="editFunc('${f.id}')">✏️</button>
+              <button class="btn btn-sm btn-danger" onclick="delFunc('${f.id}')">🗑️</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>
+      <p style="margin-top:12px;font-size:.85rem;color:#777">${list.length} funcionário(s)</p>
+      `}
+    </div>`;
+}
+
+function newFunc(){ editingId='__new__'; funcSection='pessoais'; render('funcionarios'); }
+function editFunc(id){ editingId=id; funcSection='pessoais'; render('funcionarios'); }
+function delFunc(id){
+  if(confirm('Excluir este funcionário?')){ DB.funcionarios=DB.funcionarios.filter(f=>f.id!==id); save(); render('funcionarios'); }
+}
+
+function renderFormFunc(f={}){
+  const s = funcSection;
+  const sections = [
+    {id:'pessoais',label:'📋 Pessoais'},
+    {id:'endereco',label:'📍 Endereço'},
+    {id:'familiares',label:'👨‍👩‍👧 Familiares & Dependentes'},
+    {id:'profissional',label:'💼 Profissional'},
+    {id:'beneficios',label:'🎁 Benefícios'},
+    {id:'documentos',label:'📄 Documentos'},
+    {id:'saude',label:'❤️ Saúde'},
+  ];
+  return `
+    <div class="card">
+      <h2>${f.id ? '✏️ Editar' : '➕ Novo'} Funcionário</h2>
+      <div class="section-tabs">
+        ${sections.map(sec=>`<button class="${s===sec.id?'active':''}" onclick="funcSection='${sec.id}';render('funcionarios')">${sec.label}</button>`).join('')}
+      </div>
+      <form onsubmit="saveFunc(event)">
+        ${renderFormSection(s,f)}
+        <div class="btn-row">
+          <button type="submit" class="btn btn-success">💾 Salvar</button>
+          <button type="button" class="btn btn-danger" onclick="editingId=null;render('funcionarios')">✖ Cancelar</button>
+        </div>
+      </form>
+    </div>`;
+}
+
+function renderFormSection(s,f){
+  switch(s){
+    case 'pessoais': return `
+      <div class="grid">
+        <div><label>Nome Completo *</label><input name="nome" value="${f.nome||''}" required></div>
+        <div><label>Nome de Solteira</label><input name="nomeSolteira" value="${f.nomeSolteira||''}"></div>
+        <div><label>CPF *</label><input name="cpf" value="${f.cpf||''}" placeholder="000.000.000-00" required></div>
+        <div><label>RG</label><input name="rg" value="${f.rg||''}"></div>
+        <div><label>Órgão Emissor RG</label><input name="rgOrgao" value="${f.rgOrgao||''}"></div>
+        <div><label>UF RG</label><input name="rgUF" value="${f.rgUF||''}" maxlength="2"></div>
+        <div><label>PIS/PASEP</label><input name="pis" value="${f.pis||''}"></div>
+        <div><label>CTPS (Nº)</label><input name="ctpsNum" value="${f.ctpsNum||''}"></div>
+        <div><label>CTPS (Série)</label><input name="ctpsSerie" value="${f.ctpsSerie||''}"></div>
+        <div><label>CTPS (Emissão)</label><input type="date" name="ctpsEmissao" value="${f.ctpsEmissao||''}"></div>
+        <div><label>CNH</label><input name="cnh" value="${f.cnh||''}"></div>
+        <div><label>Título de Eleitor</label><input name="tituloEleitor" value="${f.tituloEleitor||''}"></div>
+        <div><label>Certificado de Reservista</label><input name="reservista" value="${f.reservista||''}"></div>
+        <div><label>Data de Nascimento</label><input type="date" name="dataNascimento" value="${f.dataNascimento||''}"></div>
+        <div><label>Local de Nascimento</label><input name="localNascimento" value="${f.localNascimento||''}" placeholder="Cidade/UF"></div>
+        <div><label>Nacionalidade</label><input name="nacionalidade" value="${f.nacionalidade||''}"></div>
+        <div><label>Naturalidade</label><input name="naturalidade" value="${f.naturalidade||''}" placeholder="Cidade/UF"></div>
+        <div><label>Sexo</label><select name="sexo"><option value="">Selecione</option><option ${f.sexo==='F'?'selected':''}>Feminino</option><option ${f.sexo==='M'?'selected':''}>Masculino</option><option ${f.sexo==='O'?'selected':''}>Outro</option></select></div>
+        <div><label>Estado Civil</label><select name="estadoCivil"><option value="">Selecione</option><option ${f.estadoCivil==='Solteiro(a)'?'selected':''}>Solteiro(a)</option><option ${f.estadoCivil==='Casado(a)'?'selected':''}>Casado(a)</option><option ${f.estadoCivil==='Divorciado(a)'?'selected':''}>Divorciado(a)</option><option ${f.estadoCivil==='Viúvo(a)'?'selected':''}>Viúvo(a)</option><option ${f.estadoCivil==='União Estável'?'selected':''}>União Estável</option></select></div>
+        <div><label>Religião</label><input name="religiao" value="${f.religiao||''}"></div>
+        <div><label>Grau de Instrução</label><select name="instrucao"><option value="">Selecione</option><option ${f.instrucao==='Fundamental'?'selected':''}>Fundamental</option><option ${f.instrucao==='Médio'?'selected':''}>Médio</option><option ${f.instrucao==='Superior'?'selected':''}>Superior</option><option ${f.instrucao==='Pós-graduação'?'selected':''}>Pós-graduação</option><option ${f.instrucao==='Mestrado'?'selected':''}>Mestrado</option><option ${f.instrucao==='Doutorado'?'selected':''}>Doutorado</option></select></div>
+        <div><label>Raça/Etnia</label><select name="raca"><option value="">Selecione</option><option ${f.raca==='Branca'?'selected':''}>Branca</option><option ${f.raca==='Preta'?'selected':''}>Preta</option><option ${f.raca==='Parda'?'selected':''}>Parda</option><option ${f.raca==='Amarela'?'selected':''}>Amarela</option><option ${f.raca==='Indígena'?'selected':''}>Indígena</option></select></div>
+      </div>
+      <h3>Contato</h3>
+      <div class="grid">
+        <div><label>Telefone Fixo</label><input name="telFixo" value="${f.telFixo||''}"></div>
+        <div><label>Celular</label><input name="celular" value="${f.celular||''}"></div>
+        <div><label>E-mail Pessoal</label><input type="email" name="emailPessoal" value="${f.emailPessoal||''}"></div>
+        <div><label>E-mail Corporativo</label><input type="email" name="emailCorp" value="${f.emailCorp||''}"></div>
+      </div>
+      <h3>Contato de Emergência</h3>
+      <div class="grid">
+        <div><label>Nome</label><input name="emergNome" value="${f.emergNome||''}"></div>
+        <div><label>Relação</label><input name="emergRelacao" value="${f.emergRelacao||''}"></div>
+        <div><label>Telefone</label><input name="emergTel" value="${f.emergTel||''}"></div>
+      </div>`;
+    case 'endereco': return `
+      <div class="grid">
+        <div><label>CEP</label><input name="cep" value="${f.cep||''}" placeholder="00000-000"></div>
+        <div style="grid-column:span 2"><label>Logradouro</label><input name="logradouro" value="${f.logradouro||''}"></div>
+        <div><label>Número</label><input name="numero" value="${f.numero||''}"></div>
+        <div><label>Complemento</label><input name="complemento" value="${f.complemento||''}"></div>
+        <div><label>Bairro</label><input name="bairro" value="${f.bairro||''}"></div>
+        <div><label>Cidade</label><input name="cidade" value="${f.cidade||''}"></div>
+        <div><label>Estado (UF)</label><input name="estado" value="${f.estado||''}" maxlength="2"></div>
+      </div>
+      <div class="checkbox-row"><input type="checkbox" id="endDif" ${f.endDif?'checked':''} onchange="this.closest('form').querySelector('[name=endDif]').value=this.checked"><label>Endereço para correspondência é diferente</label></div>
+      <input type="hidden" name="endDif" value="${f.endDif?'true':'false'}">
+      ${f.endDif?`<h3>Endereço para Correspondência</h3><div class="grid"><div><label>CEP</label><input name="cepCorr" value="${f.cepCorr||''}"></div><div style="grid-column:span 2"><label>Logradouro</label><input name="logradouroCorr" value="${f.logradouroCorr||''}"></div><div><label>Número</label><input name="numeroCorr" value="${f.numeroCorr||''}"></div><div><label>Complemento</label><input name="complementoCorr" value="${f.complementoCorr||''}"></div><div><label>Bairro</label><input name="bairroCorr" value="${f.bairroCorr||''}"></div><div><label>Cidade</label><input name="cidadeCorr" value="${f.cidadeCorr||''}"></div><div><label>UF</label><input name="estadoCorr" value="${f.estadoCorr||''}" maxlength="2"></div></div>`:''}`;
+    case 'familiares': {
+      const deps = f.dependentes || [];
+      return `
+      <h3>Cônjuge / Companheiro(a)</h3>
+      <div class="grid">
+        <div><label>Nome</label><input name="conjugeNome" value="${f.conjugeNome||''}"></div>
+        <div><label>CPF</label><input name="conjugeCpf" value="${f.conjugeCpf||''}"></div>
+        <div><label>Profissão</label><input name="conjugeProfissao" value="${f.conjugeProfissao||''}"></div>
+        <div><label>Telefone</label><input name="conjugeTel" value="${f.conjugeTel||''}"></div>
+      </div>
+      <h3>Dependentes</h3>
+      <div id="depsList">${deps.map((d,i)=>`
+        <div class="grid" style="margin-bottom:8px;padding:10px;background:#f8f9fa;border-radius:6px">
+          <div><label>Nome</label><input name="dep_nome_${i}" value="${d.nome||''}"></div>
+          <div><label>Relação</label><select name="dep_rel_${i}"><option value="">Selecione</option>${['Filho(a)','Cônjuge','Pais','Avós','Irmão(ã)','Outro'].map(r=>`<option ${d.relacao===r?'selected':''}>${r}</option>`).join('')}</select></div>
+          <div><label>Data Nascimento</label><input type="date" name="dep_nasc_${i}" value="${d.nascimento||''}"></div>
+          <div><label>CPF</label><input name="dep_cpf_${i}" value="${d.cpf||''}"></div>
+          <div class="checkbox-row"><input type="checkbox" name="dep_ir_${i}" ${d.ir?'checked':''}><label>Dependente p/ IR</label></div>
+        </div>`).join('')}
+      </div>
+      <button type="button" class="btn btn-sm btn-primary" onclick="addDep()">+ Adicionar Dependente</button>`;
+    }
+    case 'profissional': return `
+      <div class="grid">
+        <div><label>Cargo *</label><input name="cargo" value="${f.cargo||''}" required></div>
+        <div><label>Setor/Departamento</label><input name="setor" value="${f.setor||''}"></div>
+        <div><label>Data de Admissão</label><input type="date" name="dataAdmissao" value="${f.dataAdmissao||''}"></div>
+        <div><label>Tipo de Contrato *</label><select name="tipoContrato" onchange="this.value==='Terceirizado' ? document.getElementById('tercFields').style.display='block' : document.getElementById('tercFields').style.display='none'">
+          <option value="">Selecione</option>
+          <option ${f.tipoContrato==='CLT'?'selected':''}>CLT</option>
+          <option ${f.tipoContrato==='PJ'?'selected':''}>PJ</option>
+          <option ${f.tipoContrato==='Terceirizado'?'selected':''}>Terceirizado</option>
+          <option ${f.tipoContrato==='Estagiário'?'selected':''}>Estagiário</option>
+          <option ${f.tipoContrato==='Temporário'?'selected':''}>Temporário</option>
+          <option ${f.tipoContrato==='Aprendiz'?'selected':''}>Aprendiz</option>
+        </select></div>
+        <div id="tercFields" style="grid-column:span 3;${f.tipoContrato==='Terceirizado'?'':'display:none'}">
+          <div class="grid">
+            <div><label>Empresa Terceirizadora</label><input name="empresaTerceirizadora" value="${f.empresaTerceirizadora||''}"></div>
+            <div><label>CNPJ da Terceirizadora</label><input name="cnpjTerceirizadora" value="${f.cnpjTerceirizadora||''}"></div>
+            <div><label>Valor Mensal do Contrato (R$)</label><input type="number" step="0.01" name="valorContratoTerc" value="${f.valorContratoTerc||''}"></div>
+          </div>
+        </div>
+        <div><label>Jornada de Trabalho</label><select name="jornada"><option value="">Selecione</option><option ${f.jornada==='4h'?'selected':''}>4h</option><option ${f.jornada==='6h'?'selected':''}>6h</option><option ${f.jornada==='8h'?'selected':''}>8h</option><option ${f.jornada==='12h'?'selected':''}>12h</option><option ${f.jornada==='Outra'?'selected':''}>Outra</option></select></div>
+        <div><label>Turno</label><select name="turno"><option value="">Selecione</option><option ${f.turno==='Manhã'?'selected':''}>Manhã</option><option ${f.turno==='Tarde'?'selected':''}>Tarde</option><option ${f.turno==='Noite'?'selected':''}>Noite</option><option ${f.turno==='Alternado'?'selected':''}>Alternado</option><option ${f.turno==='Misto'?'selected':''}>Misto</option></select></div>
+        <div><label>Salário Base (R$) *</label><input type="number" step="0.01" name="salario" value="${f.salario||''}" required></div>
+        <div><label>Adicional Insalubridade (R$)</label><input type="number" step="0.01" name="insalubridade" value="${f.insalubridade||0}"></div>
+        <div><label>Adicional Periculosidade (R$)</label><input type="number" step="0.01" name="periculosidade" value="${f.periculosidade||0}"></div>
+        <div><label>Comissão (R$)</label><input type="number" step="0.01" name="comissao" value="${f.comissao||0}"></div>
+        <div><label>Supervisor</label><input name="supervisor" value="${f.supervisor||''}"></div>
+        <div><label>Data de Término (temporário)</label><input type="date" name="dataTermino" value="${f.dataTermino||''}"></div>
+      </div>
+      <h3>Banco / Pagamento</h3>
+      <div class="grid">
+        <div><label>Banco</label><input name="banco" value="${f.banco||''}"></div>
+        <div><label>Agência</label><input name="agencia" value="${f.agencia||''}"></div>
+        <div><label>Conta</label><input name="conta" value="${f.conta||''}"></div>
+        <div><label>Chave PIX</label><input name="pix" value="${f.pix||''}"></div>
+      </div>`;
+    case 'beneficios': {
+      const bens = f.beneficios || {};
+      const items = [
+        {key:'vt',label:'Vale Transporte'},{key:'vr',label:'Vale Refeição/Alimentação'},
+        {key:'saude',label:'Plano de Saúde'},{key:'odonto',label:'Plano Odontológico'},
+        {key:'seguroVida',label:'Seguro de Vida'},{key:'previdencia',label:'Previdência Privada'},
+        {key:'bonus',label:'Bônus/PLR'},{key:'estacionamento',label:'Estacionamento'},
+        {key:'auxCreche',label:'Auxílio-Creche'},{key:'auxEstudo',label:'Auxílio-Estudo'},
+        {key:'auxMoradia',label:'Auxílio-Moradia'},{key:'outro',label:'Outro'}
+      ];
+      return `<div class="grid-2">` + items.map(b=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8f9fa;border-radius:6px">
+          <input type="checkbox" id="ben_${b.key}" name="ben_${b.key}" ${bens[b.key]?.ativo?'checked':''} onchange="this.closest('div').querySelector('input[type=number]').disabled=!this.checked">
+          <label style="flex:1;margin:0">${b.label}</label>
+          <input type="number" step="0.01" name="benval_${b.key}" value="${bens[b.key]?.valor||''}" placeholder="R$ 0,00" style="width:100px" ${bens[b.key]?.ativo?'':'disabled'}>
+        </div>`).join('') + `</div>
+      <div style="margin-top:10px"><label>Outro benefício (descrição)</label><input name="benOutroDesc" value="${bens.outro?.desc||''}"></div>`;
+    }
+    case 'documentos': return `
+      <div class="alert-box alert-info">Os documentos são armazenados como base64 no navegador. Para produção, use upload para servidor.</div>
+      <div class="grid">
+        <div><label>RG (imagem/PDF)</label><input type="file" name="doc_rg" accept="image/*,.pdf"></div>
+        <div><label>CPF (imagem/PDF)</label><input type="file" name="doc_cpf" accept="image/*,.pdf"></div>
+        <div><label>CTPS (imagem/PDF)</label><input type="file" name="doc_ctps" accept="image/*,.pdf"></div>
+        <div><label>CNH (imagem/PDF)</label><input type="file" name="doc_cnh" accept="image/*,.pdf"></div>
+        <div><label>Certificado Reservista</label><input type="file" name="doc_reservista" accept="image/*,.pdf"></div>
+        <div><label>Comprovante Residência</label><input type="file" name="doc_residencia" accept="image/*,.pdf"></div>
+        <div><label>ASO / Exame Admissional</label><input type="file" name="doc_aso" accept="image/*,.pdf"></div>
+        <div><label>Contrato Assinado</label><input type="file" name="doc_contrato" accept="image/*,.pdf"></div>
+        <div><label>Outro Documento</label><input type="file" name="doc_outro" accept="image/*,.pdf"></div>
+      </div>
+      <p style="margin-top:10px;font-size:.8rem;color:#777">Os arquivos já salvos serão mantidos. Para substituir, selecione um novo arquivo.</p>`;
+    case 'saude': return `
+      <div class="grid">
+        <div><label>Tipo Sanguíneo</label><select name="tipoSanguineo"><option value="">Selecione</option>${['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(t=>`<option ${f.tipoSanguineo===t?'selected':''}>${t}</option>`).join('')}</select></div>
+        <div><label>Plano de Saúde (Convênio)</label><input name="planoSaude" value="${f.planoSaude||''}"></div>
+        <div><label>Nº da Apólice</label><input name="apolice" value="${f.apolice||''}"></div>
+      </div>
+      <div><label>Alergias</label><textarea name="alergias">${f.alergias||''}</textarea></div>
+      <div><label>Condições de Saúde / Observações</label><textarea name="condicoesSaude">${f.condicoesSaude||''}</textarea></div>`;
+  }
+  return '';
+}
+
+function addDep(){
+  const f = DB.funcionarios.find(x=>x.id===editingId);
+  if(!f) return;
+  f.dependentes = f.dependentes || [];
+  f.dependentes.push({nome:'',relacao:'',nascimento:'',cpf:'',ir:false});
+  save(); render('funcionarios');
+}
+
+function saveFunc(e){
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const data = {};
+  for(const [k,v] of fd.entries()){
+    if(k.startsWith('dep_')){
+      const parts = k.split('_');
+      const idx = parseInt(parts[2]);
+      if(!data._deps) data._deps = [];
+      if(!data._deps[idx]) data._deps[idx] = {};
+      data._deps[idx][parts[1]] = v;
+    } else if(k.startsWith('benval_')){
+      const key = k.replace('benval_','');
+      if(!data._bens) data._bens = {};
+      data._bens[key] = {ativo: fd.get('ben_'+key)==='on', valor: parseFloat(v)||0};
+    } else if(k.startsWith('ben_')){
+      // handled by benval
+    } else {
+      data[k] = v;
+    }
+  }
+  // Build dependents array
+  if(data._deps){
+    data.dependentes = data._deps.filter(Boolean).map(d=>({
+      nome:d.nome||'',relacao:d.relacao||'',nascimento:d.nascimento||'',cpf:d.cpf||'',ir:d.ir==='true'||d.ir==='on'
+    }));
+    delete data._deps;
+  }
+  if(data._bens){
+    data.beneficios = data._bens;
+    delete data._bens;
+  }
+  data.salario = parseFloat(data.salario)||0;
+  data.insalubridade = parseFloat(data.insalubridade)||0;
+  data.periculosidade = parseFloat(data.periculosidade)||0;
+  data.comissao = parseFloat(data.comissao)||0;
+  data.valorContratoTerc = parseFloat(data.valorContratoTerc)||0;
+  data.endDif = data.endDif==='true';
+
+  if(editingId && editingId !== '__new__'){
+    const idx = DB.funcionarios.findIndex(x=>x.id===editingId);
+    DB.funcionarios[idx] = {...DB.funcionarios[idx], ...data};
+  } else {
+  data.id = uid();
+    DB.funcionarios.push(data);
+  }
+  save();
+  editingId = null;
+  render('funcionarios');
+}
+
+// ============ CUSTOS / GASTOS ============
+let gastoMes = new Date().toISOString().slice(0,7);
+
+function renderCustos(){
+  const gastos = DB.gastos.filter(g=>g.mes===gastoMes);
+  const cats = ['Aluguel','Energia Elétrica','Água','Internet','Telefone','Produtos de Limpeza','Material de Escritório','Manutenção Predial','Manutenção Equipamentos','Software/Licenças','Alimentação (Café/Cozinha)','Transporte/Viagens','Impostos','Seguros','Marketing/Publicidade','Consultorias','EPIs','Treinamentos','Outros'];
+  return `
+    <div class="card">
+      <h2>💰 Gastos Operacionais — <input type="month" value="${gastoMes}" onchange="gastoMes=this.value;render('custos')" style="width:auto;display:inline"></h2>
+      <div class="grid" style="margin-top:16px">
+        ${cats.map(c=>`
+          <div>
+            <label>${c}</label>
+            <input type="number" step="0.01" placeholder="0,00" value="${(gastos.find(g=>g.categoria===c)||{}).valor||''}" id="cat_${c.replace(/[^a-zA-Z]/g,'')}">
+          </div>`).join('')}
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="saveGastos()">💾 Salvar Gastos do Mês</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Histórico de Gastos</h2>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>Mês</th><th>Categoria</th><th>Valor</th><th>Ação</th></tr></thead>
+        <tbody>${DB.gastos.slice().reverse().map(g=>`
+          <tr><td>${g.mes}</td><td>${g.categoria}</td><td>R$ ${(g.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
+          <td><button class="btn btn-sm btn-danger" onclick="delGasto('${g.id}')">🗑️</button></td></tr>`).join('')}
+        </tbody>
+      </table></div>
+      ${DB.gastos.length===0?'<div class="empty-state"><p>Nenhum gasto registrado</p></div>':''}
+    </div>`;
+}
+
+function saveGastos(){
+  const cats = ['Aluguel','Energia Elétrica','Água','Internet','Telefone','Produtos de Limpeza','Material de Escritório','Manutenção Predial','Manutenção Equipamentos','Software/Licenças','Alimentação (Café/Cozinha)','Transporte/Viagens','Impostos','Seguros','Marketing/Publicidade','Consultorias','EPIs','Treinamentos','Outros'];
+  // Remove old entries for this month
+  DB.gastos = DB.gastos.filter(g=>g.mes!==gastoMes);
+  cats.forEach(c=>{
+    const el = document.getElementById('cat_'+c.replace(/[^a-zA-Z]/g,''));
+    if(el && el.value){
+      DB.gastos.push({id:uid(), mes:gastoMes, categoria:c, valor:parseFloat(el.value)});
+    }
+  });
+  save(); render('custos');
+}
+
+function delGasto(id){
+  if(confirm('Excluir?')){ DB.gastos=DB.gastos.filter(g=>g.id!==id); save(); render('custos'); }
+}
+
+// ============ DASHBOARD ============
+function renderDashboard(){
+  const funcs = DB.funcionarios;
+  const totalFuncs = funcs.length;
+  const clt = funcs.filter(f=>f.tipoContrato==='CLT').length;
+  const terc = funcs.filter(f=>f.tipoContrato==='Terceirizado').length;
+  const pj = funcs.filter(f=>f.tipoContrato==='PJ').length;
+  const estag = funcs.filter(f=>f.tipoContrato==='Estagiário').length;
+  const temp = funcs.filter(f=>f.tipoContrato==='Temporário').length;
+
+  // Salários
+  const totalSalarios = funcs.reduce((s,f)=>s+(f.salario||0)+(f.insalubridade||0)+(f.periculosidade||0)+(f.comissao||0),0);
+  // Encargos CLT (~77.5% do salário base como estimativa)
+  const totalEncargos = funcs.filter(f=>f.tipoContrato==='CLT').reduce((s,f)=>s+(f.salario||0)*0.775,0);
+  // Terceirizados
+  const totalTerc = funcs.filter(f=>f.tipoContrato==='Terceirizado').reduce((s,f)=>s+(f.valorContratoTerc||0),0);
+  // Benefícios
+  const totalBens = funcs.reduce((s,f)=>{
+    if(!f.beneficios) return s;
+    return s + Object.values(f.beneficios).reduce((bs,b)=>bs+(b.ativo?(b.valor||0):0),0);
+  },0);
+
+  // Gastos operacionais do mês
+  const gastosMes = DB.gastos.filter(g=>g.mes===gastoMes);
+  const totalOper = gastosMes.reduce((s,g)=>s+(g.valor||0),0);
+  const limpeza = gastosMes.filter(g=>g.categoria==='Produtos de Limpeza').reduce((s,g)=>s+g.valor,0);
+
+  const totalPessoal = totalSalarios + totalEncargos + totalTerc + totalBens;
+  const totalGeral = totalPessoal + totalOper;
+  const pctTerc = totalFuncs>0 ? Math.round(terc/totalFuncs*100) : 0;
+
+  return `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="value">R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="label">Custo Total Mensal</div></div>
+      <div class="stat-card"><div class="value">R$ ${totalPessoal.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="label">Custo com Pessoal</div></div>
+      <div class="stat-card"><div class="value">R$ ${totalOper.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div><div class="label">Custo Operacional</div></div>
+      <div class="stat-card ${pctTerc>20?'alert':''}"><div class="value">${pctTerc}%</div><div class="label">Terceirização</div></div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="value">${totalFuncs}</div><div class="label">Total Funcionários</div></div>
+      <div class="stat-card"><div class="value">${clt}</div><div class="label">CLT</div></div>
+      <div class="stat-card"><div class="value">${terc}</div><div class="label">Terceirizados</div></div>
+      <div class="stat-card"><div class="value">${pj}</div><div class="label">PJ</div></div>
+      <div class="stat-card"><div class="value">${estag}</div><div class="label">Estagiários</div></div>
+      <div class="stat-card"><div class="value">${temp}</div><div class="label">Temporários</div></div>
+    </div>
+    <div class="card">
+      <h2>Detalhamento de Custos</h2>
+      <table>
+        <thead><tr><th>Categoria</th><th>Valor Mensal</th><th>% do Total</th></tr></thead>
+        <tbody>
+          <tr><td>Salários + Adicionais</td><td>R$ ${totalSalarios.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${totalGeral?Math.round(totalSalarios/totalGeral*100):0}%</td></tr>
+          <tr><td>Encargos Trabalhistas (CLT ~77,5%)</td><td>R$ ${totalEncargos.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${totalGeral?Math.round(totalEncargos/totalGeral*100):0}%</td></tr>
+          <tr><td>Contratos de Terceirização</td><td>R$ ${totalTerc.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${totalGeral?Math.round(totalTerc/totalGeral*100):0}%</td></tr>
+          <tr><td>Benefícios</td><td>R$ ${totalBens.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${totalGeral?Math.round(totalBens/totalGeral*100):0}%</td></tr>
+          <tr><td>Gastos Operacionais</td><td>R$ ${totalOper.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>${totalGeral?Math.round(totalOper/totalGeral*100):0}%</td></tr>
+          <tr style="font-weight:700;background:#f0f4ff"><td>TOTAL</td><td>R$ ${totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td><td>100%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h2>Gastos Operacionais por Categoria (${gastoMes})</h2>
+      ${gastosMes.length===0?'<p style="color:#999">Nenhum gasto registrado para este mês.</p>':`
+      <table><thead><tr><th>Categoria</th><th>Valor</th></tr></thead><tbody>
+        ${gastosMes.map(g=>`<tr><td>${g.categoria}</td><td>R$ ${g.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('')}
+        <tr style="font-weight:700"><td>Total Operacional</td><td>R$ ${totalOper.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>
+      </tbody></table>`}
+    </div>
+    ${limpeza>0?`<div class="alert-box alert-info">🧹 Gasto com <strong>Produtos de Limpeza</strong> em ${gastoMes}: <strong>R$ ${limpeza.toLocaleString('pt-BR',{minimumFractionDigits:2})}</strong></div>`:''}`;
+}
+
+// ============ RELATÓRIOS ============
+function renderRelatorios(){
+  const funcs = DB.funcionarios;
+  const porSetor = {};
+  funcs.forEach(f=>{
+    const s = f.setor || 'Sem setor';
+    if(!porSetor[s]) porSetor[s] = {count:0, custo:0};
+    porSetor[s].count++;
+    porSetor[s].custo += (f.salario||0) + (f.insalubridade||0) + (f.periculosidade||0) + (f.comissao||0) + (f.valorContratoTerc||0);
+    if(f.beneficios) Object.values(f.beneficios).forEach(b=>{ if(b.ativo) porSetor[s].custo += b.valor||0; });
+  });
+  return `
+    <div class="card">
+      <h2>📋 Custo por Setor/Departamento</h2>
+      ${Object.keys(porSetor).length===0?'<p style="color:#999">Sem dados.</p>':`
+      <table><thead><tr><th>Setor</th><th>Funcionários</th><th>Custo Mensal (base)</th></tr></thead><tbody>
+        ${Object.entries(porSetor).map(([s,d])=>`<tr><td>${s}</td><td>${d.count}</td><td>R$ ${d.custo.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('')}
+      </tbody></table>`}
+    </div>
+    <div class="card">
+      <h2>📋 Lista de Funcionários Terceirizados</h2>
+      ${funcs.filter(f=>f.tipoContrato==='Terceirizado').length===0?'<p style="color:#999">Nenhum terceirizado.</p>':`
+      <table><thead><tr><th>Nome</th><th>Empresa</th><th>CNPJ</th><th>Valor Mensal</th></tr></thead><tbody>
+        ${funcs.filter(f=>f.tipoContrato==='Terceirizado').map(f=>`<tr><td>${f.nome}</td><td>${f.empresaTerceirizadora||'-'}</td><td>${f.cnpjTerceirizadora||'-'}</td><td>R$ ${(f.valorContratoTerc||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('')}
+      </tbody></table>`}
+    </div>
+    <div class="card">
+      <h2>📋 Funcionários por Tipo de Contrato</h2>
+      <table><thead><tr><th>Tipo</th><th>Qtd</th><th>%</th></tr></thead><tbody>
+        ${['CLT','PJ','Terceirizado','Estagiário','Temporário','Aprendiz'].map(t=>{
+          const c = funcs.filter(f=>f.tipoContrato===t).length;
+          return funcs.length>0?`<tr><td>${t}</td><td>${c}</td><td>${Math.round(c/funcs.length*100)}%</td></tr>`:'';
+        }).join('')}
+      </tbody></table>
+    </div>`;
+}
+
+// ============ EXPORT / IMPORT ============
+function exportData(){
+  const blob = new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `intranet_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importData(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      DB = JSON.parse(ev.target.result);
+      save();
+      render('funcionarios');
+      alert('Importação realizada com sucesso!');
+    }catch(err){ alert('Arquivo inválido: '+err.message); }
+  };
+  reader.readAsText(file);
+}
+
+// ============ INIT ============
+render('funcionarios');
+</script>
+</body>
+</html>   

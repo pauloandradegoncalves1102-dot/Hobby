@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Sol-Terra 3D Interativo</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; }
+        canvas { display: block; }
+
+        #info-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(5, 10, 25, 0.94);
+            border: 1px solid rgba(100, 180, 255, 0.4);
+            border-radius: 12px;
+            padding: 20px;
+            color: #fff;
+            min-width: 320px;
+            max-width: 380px;
+            max-height: 80vh;
+            overflow-y: auto;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 40px rgba(50, 120, 255, 0.2);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        #info-panel.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        #info-panel h2 {
+            font-size: 1.3em;
+            margin-bottom: 12px;
+            color: #64b5f6;
+            text-shadow: 0 0 10px rgba(100, 180, 255, 0.5);
+            border-bottom: 1px solid rgba(100,180,255,0.2);
+            padding-bottom: 8px;
+        }
+        #info-panel .section-title {
+            font-size: 0.85em;
+            color: #ff9800;
+            margin-top: 10px;
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+        #info-panel .property {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            font-size: 0.85em;
+            gap: 10px;
+        }
+        #info-panel .property:last-child { border-bottom: none; }
+        #info-panel .label { color: #90a4ae; white-space: nowrap; }
+        #info-panel .value { color: #e0f7fa; font-weight: 600; text-align: right; }
+
+        #title {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: #fff;
+            z-index: 10;
+        }
+        #title h1 {
+            font-size: 1.5em;
+            text-shadow: 0 0 20px rgba(255, 180, 50, 0.8);
+        }
+        #title p {
+            color: #78909c;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+
+        #legend {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(5, 10, 25, 0.88);
+            border: 1px solid rgba(100, 180, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            color: #fff;
+            backdrop-filter: blur(10px);
+        }
+        #legend h3 { font-size: 0.9em; margin-bottom: 8px; color: #b0bec5; }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+            font-size: 0.85em;
+        }
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 10px;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        #tooltip {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 100;
+            border: 1px solid rgba(255, 180, 50, 0.4);
+        }
+
+        #controls-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: #546e7a;
+            font-size: 0.75em;
+            text-align: right;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div id="title">
+        <h1>☀️ Sistema Sol – Terra</h1>
+        <p>Passe o cursor sobre os corpos para ver informações detalhadas</p>
+    </div>
+
+    <div id="info-panel">
+        <h2 id="panel-title">Corpo Celeste</h2>
+        <div id="panel-body"></div>
+    </div>
+
+    <div id="legend">
+        <h3>Legenda</h3>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffaa00; color:#ffaa00;"></div>Sol</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#4488ff; color:#4488ff;"></div>Terra</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#aaaaaa; color:#aaaaaa;"></div>Lua</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ff6600; color:#ff6600;"></div>Corona / Flares</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#88ccff; color:#88ccff;"></div>Atmosfera</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ffffff; color:#ffffff;"></div>Nuvens</div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <div id="controls-hint">
+        🖱️ Arrastar: orbitar<br>
+        🔍 Scroll: zoom<br>
+        👆 Hover: informações
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // ============ CENA ============
+        const scene = new THREE.Scene();
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 20000);
+        camera.position.set(0, 60, 180);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 15;
+        controls.maxDistance = 800;
+
+        // ============ ILUMINAÇÃO ============
+        const ambientLight = new THREE.AmbientLight(0x111122, 0.3);
+        scene.add(ambientLight);
+
+        // Luz do Sol (ponto central)
+        const sunLight = new THREE.PointLight(0xffeedd, 2.5, 2000, 1);
+        sunLight.position.set(0, 0, 0);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.set(2048, 2048);
+        scene.add(sunLight);
+
+        // Luz de preenchimento suave
+        const fillLight = new THREE.DirectionalLight(0x334466, 0.2);
+        fillLight.position.set(-100, 50, -100);
+        scene.add(fillLight);
+
+        // ============ FUNDO ESTRELADO ============
+        function createStars() {
+            const geo = new THREE.BufferGeometry();
+            const count = 8000;
+            const positions = new Float32Array(count * 3);
+            const colors = new Float32Array(count * 3);
+
+            for (let i = 0; i < count; i++) {
+                const r = 2000 + Math.random() * 5000;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                positions[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+                positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                positions[i*3+2] = r * Math.cos(phi);
+
+                const c = new THREE.Color().setHSL(
+                    0.55 + Math.random() * 0.15,
+                    0.2 + Math.random() * 0.3,
+                    0.6 + Math.random() * 0.4
+                );
+                colors[i*3] = c.r; colors[i*3+1] = c.g; colors[i*3+2] = c.b;
+            }
+
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const mat = new THREE.PointsMaterial({
+                size: 1.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.9,
+                sizeAttenuation: true
+            });
+            const stars = new THREE.Points(geo, mat);
+            scene.add(stars);
+            return stars;
+        }
+        const stars = createStars();
+
+        // ============ SOL ============
+        const SOL = {
+            radius: 25,
+            name: 'Sol',
+            data: {
+                tipo: 'Estrela (Anã Amarela – G2V)',
+                raio: '696.340 km',
+                massa: '1,989 × 10³⁰ kg',
+                tempSuperficie: '5.505 °C (5.778 K)',
+                tempNucleo: '15.000.000 °C (15,79 × 10⁶ K)',
+                composicao: '73% H, 25% He, 2% outros',
+                idade: '~4,6 bilhões de anos',
+                luminosidade: '3,828 × 10²⁶ W',
+                rotacao: '25 dias (equador) / 35 dias (polos)',
+                gravidade: '274 m/s²',
+                classe: 'G2V (Anã Amarela)',
+                distanciaTerra: '149.600.000 km (1 UA)',
+                energia: 'Fusão H → He (CNO + pp chain)'
+            }
+        };
+
+        // Textura procedural do Sol
+        function createSunTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Base laranja-amarela
+            const grad = ctx.createLinearGradient(0, 0, 0, 512);
+            grad.addColorStop(0, '#ff8800');
+            grad.addColorStop(0.3, '#ffaa22');
+            grad.addColorStop(0.5, '#ffcc44');
+            grad.addColorStop(0.7, '#ffaa22');
+            grad.addColorStop(1, '#ff8800');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 1024, 512);
+
+            // Manchas solares e células de convecção
+            for (let i = 0; i < 2000; i++) {
+                const x = Math.random() * 1024;
+                const y = Math.random() * 512;
+                const size = 2 + Math.random() * 15;
+                const brightness = Math.random();
+
+                if (brightness < 0.3) {
+                    // Células mais quentes (brancas)
+                    ctx.fillStyle = `rgba(255, 255, 200, ${0.1 + Math.random() * 0.2})`;
+                } else if (brightness < 0.7) {
+                    // Células normais
+                    ctx.fillStyle = `rgba(255, ${150 + Math.random()*80}, 0, ${0.1 + Math.random() * 0.15})`;
+                } else {
+                    // Manchas solares
+                    ctx.fillStyle = `rgba(180, 60, 0, ${0.2 + Math.random() * 0.3})`;
+                }
+                ctx.beginPath();
+                ctx.ellipse(x, y, size, size * (0.5 + Math.random() * 0.5), Math.random() * Math.PI, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Grandes manchas solares
+            for (let i = 0; i < 8; i++) {
+                const x = Math.random() * 1024;
+                const y = 100 + Math.random() * 312;
+                const w = 20 + Math.random() * 40;
+                const h = 10 + Math.random() * 20;
+                ctx.fillStyle = `rgba(100, 30, 0, ${0.4 + Math.random() * 0.3})`;
+                ctx.beginPath();
+                ctx.ellipse(x, y, w, h, Math.random() * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                // Núcleo da mancha
+                ctx.fillStyle = `rgba(50, 10, 0, 0.5)`;
+                ctx.beginPath();
+                ctx.ellipse(x, y, w * 0.5, h * 0.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const sunTexture = createSunTexture();
+        const sunGeo = new THREE.SphereGeometry(SOL.radius, 64, 64);
+        const sunMat = new THREE.MeshBasicMaterial({
+            map: sunTexture,
+            color: 0xffcc66
+        });
+        const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+        sunMesh.userData = { name: SOL.name, data: SOL.data, type: 'sun' };
+        scene.add(sunMesh);
+
+        // Corona (camadas de brilho)
+        const coronaLayers = [];
+        for (let i = 1; i <= 4; i++) {
+            const r = SOL.radius * (1.05 + i * 0.08);
+            const geo = new THREE.SphereGeometry(r, 32, 32);
+            const mat = new THREE.MeshBasicMaterial({
+                color: new THREE.Color().setHSL(0.08 - i * 0.01, 1, 0.5 + i * 0.05),
+                transparent: true,
+                opacity: 0.06 - i * 0.01,
+                side: THREE.BackSide
+            });
+            const corona = new THREE.Mesh(geo, mat);
+            scene.add(corona);
+            coronaLayers.push(corona);
+        }
+
+        // Flares solares (partículas)
+        const flareParticles = [];
+        function createSolarFlares() {
+            for (let i = 0; i < 300; i++) {
+                const geo = new THREE.SphereGeometry(0.3 + Math.random() * 0.5, 8, 8);
+                const mat = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color().setHSL(0.05 + Math.random() * 0.08, 1, 0.6 + Math.random() * 0.3),
+                    transparent: true,
+                    opacity: 0.6 + Math.random() * 0.4
+                });
+                const particle = new THREE.Mesh(geo, mat);
+
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const baseR = SOL.radius * 1.05;
+                particle.position.set(
+                    baseR * Math.sin(phi) * Math.cos(theta),
+                    baseR * Math.sin(phi) * Math.sin(theta),
+                    baseR * Math.cos(phi)
+                );
+
+                particle.userData = {
+                    name: 'Partícula de Flare Solar',
+                    data: {
+                        tipo: 'Plasma (H⁺, e⁻, He⁺)',
+                        velocidade: '400 – 3000 km/s',
+                        temp: '10⁶ – 10⁷ K',
+                        origem: 'Campos magnéticos reconnection',
+                        efeito: 'Tempestade geomagnética',
+                        duracao: 'Minutos a horas'
+                    },
+                    type: 'flare',
+                    angle: theta,
+                    phi: phi,
+                    speed: 0.5 + Math.random() * 1.5,
+                    dist: 0,
+                    maxDist: 20 + Math.random() * 30
+                };
+                scene.add(particle);
+                flareParticles.push(particle);
+            }
+        }
+        createSolarFlares();
+
+        // ============ ORBITA DA TERRA ============
+        const EARTH_ORBIT_RADIUS = 120;
+
+        const orbitGeo = new THREE.TorusGeometry(EARTH_ORBIT_RADIUS, 0.2, 8, 256);
+        const orbitMat = new THREE.MeshBasicMaterial({
+            color: 0x4488ff,
+            transparent: true,
+            opacity: 0.25
+        });
+        const orbitRing = new THREE.Mesh(orbitGeo, orbitMat);
+        orbitRing.rotation.x = Math.PI / 2;
+        scene.add(orbitRing);
+
+        // ============ TERRA ============
+        const TERRA = {
+            name: 'Terra',
+            data: {
+                tipo: 'Planeta Rochoso (Terrestre)',
+                raio: '6.371 km',
+                diametro: '12.742 km',
+                massa: '5,972 × 10²⁴ kg',
+                tempMedia: '15 °C (288 K)',
+                composicao: 'Fe (32%), O (30%), Si (15%), Mg (13%)',
+                idade: '4,54 bilhões de anos',
+                gravidade: '9,807 m/s²',
+                rotacao: '23h 56min 4s (dia sideral)',
+                translacao: '365,25 dias (ano)',
+                velocidadeOrbital: '29,78 km/s',
+                inclinacao: '23,44°',
+                luas: '1 (Lua)',
+                atmosfera: '78% N₂, 21% O₂, 1% Ar, CO₂, H₂O',
+                campos: 'Magnético (dipolo) – 25–65 μT',
+                oceanos: '71% coberto por água'
+            }
+        };
+
+        // Textura procedural da Terra
+        function createEarthTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+
+            // Oceano
+            const oceanGrad = ctx.createLinearGradient(0, 0, 0, 512);
+            oceanGrad.addColorStop(0, '#1a3a6a');
+            oceanGrad.addColorStop(0.3, '#1e4d8a');
+            oceanGrad.addColorStop(0.5, '#2255a0');
+            oceanGrad.addColorStop(0.7, '#1e4d8a');
+            oceanGrad.addColorStop(1, '#1a3a6a');
+            ctx.fillStyle = oceanGrad;
+            ctx.fillRect(0, 0, 1024, 512);
+
+            // Continentes (formas aproximadas)
+            ctx.fillStyle = '#2d7a3a';
+            // América do Sul
+            drawContinent(ctx, [580, 280], [[0,0],[30,-20],[60,-10],[80,20],[70,60],[50,90],[30,100],[10,80],[-10,50],[-15,20]]);
+            // América do Norte
+            drawContinent(ctx, [500, 120], [[0,0],[40,-10],[80,0],[100,30],[90,60],[60,70],[30,60],[0,40],[-20,20]]);
+            // Europa
+            drawContinent(ctx, [700, 100], [[0,0],[20,-10],[40,-5],[50,10],[40,30],[20,35],[0,25]]);
+            // África
+            drawContinent(ctx, [710, 220], [[0,0],[30,-10],[60,0],[70,40],[60,80],[40,100],[20,90],[0,60],[-10,30]]);
+            // Ásia
+            drawContinent(ctx, [800, 120], [[0,0],[50,-20],[120,-10],[180,10],[200,40],[180,70],[140,80],[100,60],[50,40],[0,20]]);
+            // Austrália
+            drawContinent(ctx, [900, 320], [[0,0],[30,-10],[60,-5],[70,15],[50,30],[20,25],[0,15]]);
+            // Antártida
+            ctx.fillStyle = '#e8f0f8';
+            ctx.fillRect(0, 470, 1024, 42);
+            // Gelo Ártico
+            ctx.fillRect(0, 0, 1024, 20);
+
+            // Detalhes: desertos
+            ctx.fillStyle = 'rgba(200, 170, 80, 0.5)';
+            ctx.beginPath();
+            ctx.ellipse(720, 200, 40, 20, 0, 0, Math.PI * 2);
+            ctx.fill();
+            // Amazônia
+            ctx.fillStyle = 'rgba(20, 100, 40, 0.6)';
+            ctx.beginPath();
+            ctx.ellipse(580, 270, 40, 25, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function drawContinent(ctx, origin, points) {
+            ctx.beginPath();
+            ctx.moveTo(origin[0] + points[0][0], origin[1] + points[0][1]);
+            for (let i = 1; i < points.length; i++) {
+                const prev = points[i-1];
+                const curr = points[i];
+                const cpx = origin[0] + (prev[0] + curr[0]) / 2 + (Math.random() - 0.5) * 10;
+                const cpy = origin[1] + (prev[1] + curr[1]) / 2 + (Math.random() - 0.5) * 10;
+                ctx.quadraticCurveTo(cpx, cpy, origin[0] + curr[0], origin[1] + curr[1]);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Textura de nuvens
+        function createCloudTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 1024;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, 1024, 512);
+
+            for (let i = 0; i < 500; i++) {
+                const x = Math.random() * 1024;
+                const y = Math.random() * 512;
+                const w = 20 + Math.random() * 80;
+                const h = 5 + Math.random() * 20;
+                const opacity = 0.1 + Math.random() * 0.4;
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                ctx.beginPath();
+                ctx.ellipse(x, y, w, h, Math.random() * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Bandas de nuvens (cinturões de rotação)
+            for (let band = 0; band < 6; band++) {
+                const y = 50 + band * 80;
+                for (let i = 0; i < 30; i++) {
+                    const x = Math.random() * 1024;
+                    const w = 30 + Math.random() * 60;
+                    const h = 3 + Math.random() * 8;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${0.15 + Math.random() * 0.25})`;
+                    ctx.beginPath();
+                    ctx.ellipse(x, y + (Math.random()-0.5)*20, w, h, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const earthRadius = 8;
+        const earthTexture = createEarthTexture();
+        const cloudTexture = createCloudTexture();
+
+        // Grupo Terra (para orbitar)
+        const earthGroup = new THREE.Group();
+        scene.add(earthGroup);
+
+        // Esfera da Terra
+        const earthGeo = new THREE.SphereGeometry(earthRadius, 64, 64);
+        const earthMat = new THREE.MeshStandardMaterial({
+            map: earthTexture,
+            roughness: 0.6,
+            metalness: 0.1
+        });
+        const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+        earthMesh.castShadow = true;
+        earthMesh.receiveShadow = true;
+        earthMesh.userData = { name: TERRA.name, data: TERRA.data, type: 'earth' };
+        earthGroup.add(earthMesh);
+
+        // Camada de nuvens
+        const cloudGeo = new THREE.SphereGeometry(earthRadius * 1.02, 64, 64);
+        const cloudMat = new THREE.MeshStandardMaterial({
+            map: cloudTexture,
+            transparent: true,
+            opacity: 0.7,
+            roughness: 0.9,
+            metalness: 0
+        });
+        const cloudMesh = new THREE.Mesh(cloudGeo, cloudMat);
+        cloudMesh.userData = {
+            name: 'Nuvens / Atmosfera',
+            data: {
+                tipo: 'Nuvens (H₂O condensado)',
+                altitude: '0 – 12 km (troposfera)',
+                cobertura: '~67% da superfície',
+                tipos: 'Cirrus, Stratus, Cumulus, Nimbus',
+                funcao: 'Ciclo da água, albedo (reflete 25% da luz solar)',
+                composicao: 'Gotículas de H₂O / cristais de gelo',
+                velocidade: 'Vento: 0 – 500 km/s (jet stream)'
+            },
+            type: 'clouds'
+        };
+        earthGroup.add(cloudMesh);
+
+        // Atmosfera (glow)
+        const atmoGeo = new THREE.SphereGeometry(earthRadius * 1.12, 64, 64);
+        const atmoMat = new THREE.MeshBasicMaterial({
+            color: 0x4488ff,
+            transparent: true,
+            opacity: 0.12,
+            side: THREE.BackSide
+        });
+        const atmoMesh = new THREE.Mesh(atmoGeo, atmoMat);
+        atmoMesh.userData = {
+            name: 'Atmosfera Terrestre',
+            data: {
+                tipo: 'Atmosfera (gases)',
+                composicao: '78% N₂, 21% O₂, 0,9% Ar, 0,04% CO₂',
+                espessura: '~100 km (Kármán line)',
+                pressaoNivel: '101,3 kPa (1 atm ao nível do mar)',
+                camadas: 'Troposfera, Estratosfera, Mesosfera, Termosfera, Exosfera',
+                tempVariacao: '-56°C (tropopausa) a 1000°C (termosfera)',
+                magnetosfera: 'Campo magnético: 25–65 μT',
+                protecao: 'Bloqueia radiação UV e vento solar'
+            },
+            type: 'atmosphere'
+        };
+        earthGroup.add(atmoMesh);
+
+        // ============ LUA ============
+        const LUA = {
+            name: 'Lua',
+            data: {
+                tipo: 'Satélite Natural',
+                raio: '1.737 km',
+                distancia: '384.400 km (média)',
+                massa: '7,342 × 10²² kg',
+                gravidade: '1,62 m/s² (1/6 da Terra)',
+                rotacao: '27,3 dias (síncrona com órbita)',
+                composicao: 'Silicatos, Fe, O, Mg, Al',
+                idade: '~4,5 bilhões de anos',
+                origem: 'Hipótese do Grande Impacto',
+                temperatura: '-173°C a 127°C',
+                crateras: 'Milhares (Tycho, Copérnico, etc.)'
+            }
+        };
+
+        const moonRadius = 2.2;
+        const moonOrbitRadius = 18;
+
+        // Textura da Lua
+        function createMoonTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#888888';
+            ctx.fillRect(0, 0, 512, 256);
+
+            // Mares (regiões mais escuras)
+            for (let i = 0; i < 15; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 256;
+                const r = 15 + Math.random() * 40;
+                ctx.fillStyle = `rgba(60, 60, 70, ${0.3 + Math.random() * 0.3})`;
+                ctx.beginPath();
+                ctx.ellipse(x, y, r, r * (0.6 + Math.random() * 0.4), Math.random(), 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Crateras
+            for (let i = 0; i < 200; i++) {
+                const x = Math.random() * 512;
+                const y = Math.random() * 256;
+                const r = 2 + Math.random() * 12;
+                ctx.strokeStyle = `rgba(100, 100, 100, ${0.3 + Math.random() * 0.4})`;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.stroke();
+                // Sombra interna
+                ctx.fillStyle = `rgba(50, 50, 55, ${0.2 + Math.random() * 0.2})`;
+                ctx.beginPath();
+                ctx.arc(x + 1, y + 1, r * 0.7, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        const moonTexture = createMoonTexture();
+        const moonGeo = new THREE.SphereGeometry(moonRadius, 32, 32);
+        const moonMat = new THREE.MeshStandardMaterial({
+            map: moonTexture,
+            roughness: 0.9,
+            metalness: 0.05
+        });
+        const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+        moonMesh.castShadow = true;
+        moonMesh.receiveShadow = true;
+        moonMesh.userData = { name: LUA.name, data: LUA.data, type: 'moon' };
+
+        // Grupo Lua (orbita a Terra)
+        const moonGroup = new THREE.Group();
+        moonGroup.add(moonMesh);
+        earthGroup.add(moonGroup);
+
+        // ============ PICKABLE OBJECTS ============
+        const pickableObjects = [sunMesh, earthMesh, cloudMesh, atmoMesh, moonMesh];
+
+        // ============ RAYCASTER ============
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        let hoveredObject = null;
+        let originalMaterial = null;
+
+        const infoPanel = document.getElementById('info-panel');
+        const panelTitle = document.getElementById('panel-title');
+        const panelBody = document.getElementById('panel-body');
+        const tooltip = document.getElementById('tooltip');
+
+        function updateInfoPanel(data) {
+            panelTitle.textContent = data.name;
+
+            const colorMap = {
+                sun: '#ffaa00',
+                earth: '#4488ff',
+                clouds: '#ffffff',
+                atmosphere: '#88ccff',
+                moon: '#aaaaaa',
+                flare: '#ff6600'
+            };
+            panelTitle.style.color = colorMap[data.type] || '#64b5f6';
+
+            let html = '';
+            const entries = Object.entries(data.data);
+            entries.forEach(([label, value]) => {
+                html += `<div class="property"><span class="label">${label}</span><span class="value">${value}</span></div>`;
+            });
+
+            panelBody.innerHTML = html;
+            infoPanel.classList.add('visible');
+        }
+
+        function hideInfoPanel() {
+            infoPanel.classList.remove('visible');
+            tooltip.style.opacity = '0';
+        }
+
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            // Incluir flares no raycast
+            const allPickable = [...pickableObjects, ...flareParticles];
+            const intersects = raycaster.intersectObjects(allPickable);
+
+            if (hoveredObject && (!intersects.length || intersects[0].object !== hoveredObject)) {
+                if (originalMaterial) {
+                    hoveredObject.material = originalMaterial;
+                    originalMaterial = null;
+                }
+                hoveredObject = null;
+            }
+
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                if (obj !== hoveredObject) {
+                    hoveredObject = obj;
+                    originalMaterial = obj.material;
+
+                    // Efeito de highlight
+                    if (obj.userData.type !== 'sun') {
+                        const hoverMat = obj.material.clone();
+                        hoverMat.emissive = new THREE.Color(0x334466);
+                        hoverMat.emissiveIntensity = 0.5;
+                        obj.material = hoverMat;
+                    }
+                    document.body.style.cursor = 'pointer';
+                }
+
+                updateInfoPanel(obj.userData);
+
+                tooltip.textContent = obj.userData.name;
+                tooltip.style.opacity = '1';
+                tooltip.style.left = (event.clientX + 15) + 'px';
+                tooltip.style.top = (event.clientY - 10) + 'px';
+            } else {
+                hideInfoPanel();
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+
+        // ============ ANIMAÇÃO ============
+        const clock = new THREE.Clock();
+        let earthAngle = 0;
+        let moonAngle = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+            const delta = clock.getDelta();
+
+            // Rotação do Sol
+            sunMesh.rotation.y = t * 0.05;
+
+            // Pulsação da corona
+            coronaLayers.forEach((layer, i) => {
+                const pulse = 1 + Math.sin(t * (1.5 + i * 0.3)) * 0.02;
+                layer.scale.set(pulse, pulse, pulse);
+                layer.material.opacity = (0.06 - i * 0.01) + Math.sin(t * 2 + i) * 0.01;
+            });
+
+            // Flares solares
+            flareParticles.forEach(p => {
+                const d = p.userData;
+                d.dist += d.speed * 0.02;
+                if (d.dist > d.maxDist) {
+                    d.dist = 0;
+                    d.angle = Math.random() * Math.PI * 2;
+                    d.phi = Math.acos(2 * Math.random() - 1);
+                }
+                const r = SOL.radius * 1.05 + d.dist;
+                p.position.set(
+                    r * Math.sin(d.phi) * Math.cos(d.angle + t * 0.1),
+                    r * Math.sin(d.phi) * Math.sin(d.angle + t * 0.1),
+                    r * Math.cos(d.phi)
+                );
+                p.material.opacity = Math.max(0, 1 - d.dist / d.maxDist);
+            });
+
+            // Órbita da Terra
+            earthAngle += 0.003;
+            earthGroup.position.x = Math.cos(earthAngle) * EARTH_ORBIT_RADIUS;
+            earthGroup.position.z = Math.sin(earthAngle) * EARTH_ORBIT_RADIUS;
+
+            // Rotação da Terra
+            earthMesh.rotation.y = t * 0.3;
+            cloudMesh.rotation.y = t * 0.32;
+
+            // Inclinação axial
+            earthMesh.rotation.z = 23.44 * Math.PI / 180;
+
+            // Órbita da Lua
+            moonAngle += 0.015;
+            moonMesh.position.x = Math.cos(moonAngle) * moonOrbitRadius;
+            moonMesh.position.z = Math.sin(moonAngle) * moonOrbitRadius;
+            moonMesh.rotation.y = t * 0.1;
+
+            // Pulso da atmosfera
+            atmoMat.opacity = 0.1 + Math.sin(t * 1.5) * 0.03;
+
+            // Estrelas
+            stars.rotation.y = t * 0.002;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>   

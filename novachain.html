@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Supply Chain Command Center</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #0a0e1a; font-family: 'Segoe UI', system-ui, sans-serif; color: #e0e8f0; }
+        canvas { display: block; position: fixed; top: 0; left: 0; z-index: 0; }
+
+        #ui-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        #ui-layer > * { pointer-events: auto; }
+
+        /* HEADER */
+        #header {
+            position: fixed; top: 0; left: 0; right: 0; height: 56px;
+            background: rgba(10, 14, 26, 0.92);
+            border-bottom: 1px solid rgba(100, 180, 255, 0.15);
+            display: flex; align-items: center; padding: 0 24px;
+            backdrop-filter: blur(12px); z-index: 20;
+        }
+        #header .logo { font-size: 1.1em; font-weight: 700; color: #64b5f6; margin-right: 24px; }
+        #header .logo span { color: #ff9800; }
+        #header .nav { display: flex; gap: 4px; flex: 1; }
+        #header .nav-item {
+            padding: 6px 14px; border-radius: 6px; font-size: 0.82em;
+            color: #7a8fa6; cursor: pointer; transition: all 0.2s;
+        }
+        #header .nav-item:hover { background: rgba(100,180,255,0.1); color: #b0d4f1; }
+        #header .nav-item.active { background: rgba(100,180,255,0.15); color: #64b5f6; font-weight: 600; }
+        #header .status {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.78em; color: #4caf50;
+        }
+        #header .status .dot { width: 8px; height: 8px; border-radius: 50%; background: #4caf50; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+        /* KPI BAR */
+        #kpi-bar {
+            position: fixed; top: 64px; left: 16px; right: 16px;
+            display: flex; gap: 12px; z-index: 15;
+        }
+        .kpi-card {
+            flex: 1; background: rgba(10, 18, 35, 0.88);
+            border: 1px solid rgba(100, 180, 255, 0.12);
+            border-radius: 10px; padding: 12px 16px;
+            backdrop-filter: blur(10px); transition: all 0.3s;
+        }
+        .kpi-card:hover { border-color: rgba(100,180,255,0.3); transform: translateY(-2px); }
+        .kpi-card .kpi-label { font-size: 0.7em; color: #6a7f96; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .kpi-card .kpi-value { font-size: 1.4em; font-weight: 700; }
+        .kpi-card .kpi-delta { font-size: 0.72em; margin-top: 2px; }
+        .kpi-card .kpi-delta.up { color: #4caf50; }
+        .kpi-card .kpi-delta.down { color: #f44336; }
+        .kpi-card .kpi-delta.neutral { color: #ff9800; }
+
+        /* LEFT PANEL - REGIONS */
+        #left-panel {
+            position: fixed; top: 150px; left: 16px; width: 260px;
+            max-height: calc(100vh - 180px); overflow-y: auto;
+            z-index: 15;
+        }
+        .panel-section {
+            background: rgba(10, 18, 35, 0.88);
+            border: 1px solid rgba(100, 180, 255, 0.12);
+            border-radius: 10px; padding: 14px; margin-bottom: 12px;
+            backdrop-filter: blur(10px);
+        }
+        .panel-section h3 { font-size: 0.8em; color: #64b5f6; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .region-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.8em;
+        }
+        .region-row:last-child { border-bottom: none; }
+        .region-name { color: #a0b8d0; }
+        .region-status { font-weight: 600; }
+        .region-status.ok { color: #4caf50; }
+        .region-status.warn { color: #ff9800; }
+        .region-status.crit { color: #f44336; }
+
+        .bar-container { width: 100%; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 4px; }
+        .bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+
+        /* RIGHT PANEL - ALERTS */
+        #right-panel {
+            position: fixed; top: 150px; right: 16px; width: 300px;
+            max-height: calc(100vh - 180px); overflow-y: auto;
+            z-index: 15;
+        }
+        .alert-item {
+            padding: 10px 12px; margin-bottom: 8px;
+            border-radius: 8px; font-size: 0.78em;
+            border-left: 3px solid;
+            background: rgba(255,255,255,0.02);
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+        .alert-item.critical { border-color: #f44336; background: rgba(244,67,54,0.08); }
+        .alert-item.warning { border-color: #ff9800; background: rgba(255,152,0,0.06); }
+        .alert-item.info { border-color: #2196f3; background: rgba(33,150,243,0.06); }
+        .alert-item .alert-time { font-size: 0.85em; color: #5a6f86; margin-bottom: 3px; }
+        .alert-item .alert-msg { color: #c0d0e0; line-height: 1.4; }
+
+        /* BOTTOM PANEL - CHARTS */
+        #bottom-panel {
+            position: fixed; bottom: 16px; left: 16px; right: 16px;
+            display: flex; gap: 12px; height: 140px; z-index: 15;
+        }
+        .chart-card {
+            flex: 1; background: rgba(10, 18, 35, 0.88);
+            border: 1px solid rgba(100, 180, 255, 0.12);
+            border-radius: 10px; padding: 12px;
+            backdrop-filter: blur(10px);
+        }
+        .chart-card h4 { font-size: 0.75em; color: #7a8fa6; margin-bottom: 8px; }
+        .chart-card canvas { width: 100%; height: 85px; }
+
+        /* TOOLTIP */
+        #tooltip {
+            position: fixed; background: rgba(5, 10, 20, 0.95);
+            color: #fff; padding: 10px 14px; border-radius: 8px;
+            font-size: 0.8em; pointer-events: none; opacity: 0;
+            transition: opacity 0.2s; z-index: 100;
+            border: 1px solid rgba(100,180,255,0.3);
+            max-width: 280px;
+        }
+        #tooltip .tt-title { font-weight: 700; color: #64b5f6; margin-bottom: 4px; }
+        #tooltip .tt-row { display: flex; justify-content: space-between; gap: 16px; padding: 2px 0; }
+        #tooltip .tt-label { color: #7a8fa6; }
+        #tooltip .tt-val { color: #e0f0ff; font-weight: 600; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(100,150,255,0.3); border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <div class="logo">⬡ <span>NOVA</span>CHAIN</div>
+        <div class="nav">
+            <div class="nav-item active">Visão Global</div>
+            <div class="nav-item">Logística</div>
+            <div class="nav-item">Estoque</div>
+            <div class="nav-item">Financeiro</div>
+            <div class="nav-item">Forecast</div>
+            <div class="nav-item">Relatórios</div>
+        </div>
+        <div class="status"><div class="dot"></div> LIVE · 12:47:33 UTC</div>
+    </div>
+
+    <div id="kpi-bar">
+        <div class="kpi-card">
+            <div class="kpi-label">Otimização de Entregas</div>
+            <div class="kpi-value" style="color:#4caf50" id="kpi-otd">94.2%</div>
+            <div class="kpi-delta up">▲ +1.3% vs mês anterior</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Custo por Unidade</div>
+            <div class="kpi-value" style="color:#ff9800" id="kpi-cost">US$ 4.72</div>
+            <div class="kpi-delta down">▼ -0.8% vs budget</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Volume Diário</div>
+            <div class="kpi-value" style="color:#64b5f6" id="kpi-vol">128.4K</div>
+            <div class="kpi-delta up">▲ +5.2% vs média</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">SLA Ativo</div>
+            <div class="kpi-value" style="color:#4caf50" id="kpi-sla">99.7%</div>
+            <div class="kpi-delta neutral">● 3 incidentes abertos</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Receita (MTR)</div>
+            <div class="kpi-value" style="color:#ce93d8" id="kpi-rev">US$ 2.41B</div>
+            <div class="kpi-delta up">▲ +12.4% YoY</div>
+        </div>
+    </div>
+
+    <div id="left-panel">
+        <div class="panel-section">
+            <h3>Regiões Operacionais</h3>
+            <div id="regions-list"></div>
+        </div>
+        <div class="panel-section">
+            <h3>Modos de Transporte</h3>
+            <div id="transport-list"></div>
+        </div>
+        <div class="panel-section">
+            <h3>Moedas Ativas</h3>
+            <div id="currency-list"></div>
+        </div>
+    </div>
+
+    <div id="right-panel">
+        <div class="panel-section">
+            <h3>⚡ Alertas em Tempo Real</h3>
+            <div id="alerts-list"></div>
+        </div>
+        <div class="panel-section">
+            <h3>📦 Pedidos Críticos</h3>
+            <div id="critical-orders"></div>
+        </div>
+    </div>
+
+    <div id="bottom-panel">
+        <div class="chart-card">
+            <h4>Volume por Região (últimas 24h)</h4>
+            <canvas id="chart-volume"></canvas>
+        </div>
+        <div class="chart-card">
+            <h4>Custo Logístico (tendência 7d)</h4>
+            <canvas id="chart-cost"></canvas>
+        </div>
+        <div class="chart-card">
+            <h4>SLA por Corredor</h4>
+            <canvas id="chart-sla"></canvas>
+        </div>
+    </div>
+
+    <div id="tooltip"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+    // ============ DADOS SIMULADOS ============
+    const DATA = {
+        regions: [
+            { name: 'América do Norte', code: 'NA', status: 'ok', load: 87, volume: 42000, cost: 4.2, sla: 96.1 },
+            { name: 'América Latina', code: 'LATAM', status: 'warn', load: 72, volume: 18500, cost: 5.8, sla: 91.3 },
+            { name: 'Europa', code: 'EU', status: 'ok', load: 91, volume: 38000, cost: 3.9, sla: 97.2 },
+            { name: 'Ásia-Pacífico', code: 'APAC', status: 'ok', load: 84, volume: 29000, cost: 4.5, sla: 94.8 },
+            { name: 'Oriente Médio', code: 'MENA', status: 'warn', load: 65, volume: 8200, cost: 6.1, sla: 89.4 },
+            { name: 'África', code: 'AF', status: 'crit', load: 45, volume: 3700, cost: 7.3, sla: 82.1 }
+        ],
+        transport: [
+            { name: 'Marítimo', pct: 45, cost: 2.1, time: '25-40 dias' },
+            { name: 'Aéreo', pct: 22, cost: 8.4, time: '1-5 dias' },
+            { name: 'Rodoviário', pct: 24, cost: 4.8, time: '2-10 dias' },
+            { name: 'Ferroviário', pct: 9, cost: 3.5, time: '7-15 dias' }
+        ],
+        currencies: [
+            { code: 'USD', rate: 1.0, flag: '🇺🇸' },
+            { code: 'EUR', rate: 0.92, flag: '🇪🇺' },
+            { code: 'BRL', rate: 5.42, flag: '🇧🇷' },
+            { code: 'JPY', rate: 149.5, flag: '🇯🇵' },
+            { code: 'CNY', rate: 7.24, flag: '🇨🇳' },
+            { code: 'GBP', rate: 0.79, flag: '🇬🇧' }
+        ],
+        routes: [
+            { from: [40.7, -74.0], to: [51.5, -0.1], name: 'Nova York → Londres', mode: 'Aéreo', eta: '7h', status: 'ok' },
+            { from: [40.7, -74.0], to: [35.7, 139.7], name: 'Nova York → Tóquio', mode: 'Aéreo', eta: '14h', status: 'ok' },
+            { from: [31.2, 121.5], to: [1.3, 103.8], name: 'Shanghai → Singapura', mode: 'Marítimo', eta: '12d', status: 'warn' },
+            { from: [51.5, -0.1], to: [-23.5, -46.6], name: 'Londres → São Paulo', mode: 'Aéreo', eta: '12h', status: 'ok' },
+            { from: [25.2, 55.3], to: [19.1, 72.9], name: 'Dubai → Mumbai', mode: 'Aéreo', eta: '3h', status: 'ok' },
+            { from: [1.3, 103.8], to: [-33.9, 151.2], name: 'Singapura → Sydney', mode: 'Marítimo', eta: '8d', status: 'ok' },
+            { from: [35.7, 139.7], to: [37.6, 127.0], name: 'Tóquio → Seul', mode: 'Aéreo', eta: '3h', status: 'ok' },
+            { from: [31.2, 121.5], to: [51.5, -0.1], name: 'Shanghai → Londres', mode: 'Marítimo', eta: '32d', status: 'crit' },
+            { from: [19.4, -99.1], to: [48.9, 2.3], name: 'CDMX → Paris', mode: 'Aéreo', eta: '10h', status: 'ok' },
+            { from: [-33.9, 151.2], to: [40.7, -74.0], name: 'Sydney → Nova York', mode: 'Marítimo', eta: '28d', status: 'ok' }
+        ],
+        alerts: [
+            { type: 'critical', msg: 'Porto de Shanghai: greve de estivadores. Atraso estimado 72h para 340 containers.', time: '12:42' },
+            { type: 'warning', msg: 'Corredor Rotterdam → Antuérpia: capacidade reduzida 40% (manutenção).', time: '12:38' },
+            { type: 'warning', msg: 'Troca BRL/USD: variação +2.3% em 24h. Impacto: US$ 4.2M em contratos.', time: '12:35' },
+            { type: 'info', msg: 'Novo hub logístico em Jacareí (SP) operando a 100% desde 09:00 BRT.', time: '12:30' },
+            { type: 'critical', msg: 'Rota Marítima Suez: bloqueio parcial. Redirecionamento via Cabo da Boa Esperança.', time: '12:22' },
+            { type: 'info', msg: 'Forecast Q4 atualizado: demanda APAC +18% vs. plano.', time: '12:15' },
+            { type: 'warning', msg: 'Estoque crítico: SKU-4471 (chips) — 3 dias de cobertura em 4 DCs.', time: '12:08' }
+        ],
+        criticalOrders: [
+            { id: 'PO-2024-88421', region: 'APAC', value: 'US$ 2.4M', eta: 'Em risco', days: 3 },
+            { id: 'PO-2024-88394', region: 'EU', value: 'US$ 1.8M', eta: 'Atrasado', days: 1 },
+            { id: 'PO-2024-88367', region: 'LATAM', value: 'US$ 940K', eta: 'Em risco', days: 5 },
+            { id: 'PO-2024-88341', region: 'MENA', value: 'US$ 620K', eta: 'OK', days: 12 }
+        ]
+    };
+
+    // ============ CENA 3D ============
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 10000);
+    camera.position.set(0, 80, 250);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    document.body.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 80;
+    controls.maxDistance = 500;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.3;
+
+    // ============ GLOBO ============
+    const GLOBE_R = 50;
+
+    // Textura procedural da Terra
+    function createEarthTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 1024; canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+
+        // Oceano
+        const grad = ctx.createLinearGradient(0, 0, 0, 512);
+        grad.addColorStop(0, '#0a1628');
+        grad.addColorStop(0.5, '#0d1f3a');
+        grad.addColorStop(1, '#0a1628');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 1024, 512);
+
+        // Grid de lat/lon
+        ctx.strokeStyle = 'rgba(100, 180, 255, 0.08)';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i <= 36; i++) {
+            const x = (i / 36) * 1024;
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+        }
+        for (let i = 0; i <= 18; i++) {
+            const y = (i / 18) * 512;
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1024, y); ctx.stroke();
+        }
+
+        // Continentes (simplificados)
+        ctx.fillStyle = 'rgba(30, 80, 50, 0.7)';
+        // América do Norte
+        drawBlob(ctx, 200, 120, 80, 60);
+        // América do Sul
+        drawBlob(ctx, 280, 310, 40, 70);
+        // Europa
+        drawBlob(ctx, 520, 100, 50, 30);
+        // África
+        drawBlob(ctx, 540, 240, 50, 80);
+        // Ásia
+        drawBlob(ctx, 700, 120, 120, 60);
+        // Austrália
+        drawBlob(ctx, 820, 330, 45, 30);
+        // Índia
+        drawBlob(ctx, 700, 200, 30, 40);
+
+        // Cidades (pontos brilhantes)
+        const cities = [
+            [40.7, -74.0], [51.5, -0.1], [35.7, 139.7], [31.2, 121.5],
+            [-23.5, -46.6], [1.3, 103.8], [25.2, 55.3], [-33.9, 151.2],
+            [19.4, -99.1], [48.9, 2.3], [37.6, 127.0], [55.8, 37.6],
+            [19.1, 72.9], [14.6, 121.0], [28.6, 77.2]
+        ];
+        cities.forEach(([lat, lon]) => {
+            const x = ((lon + 180) / 360) * 1024;
+            const y = ((90 - lat) / 180) * 512;
+            ctx.fillStyle = 'rgba(255, 200, 50, 0.9)';
+            ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(255, 200, 50, 0.3)';
+            ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fill();
+        });
+
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    function drawBlob(ctx, cx, cy, w, h) {
+        ctx.beginPath();
+        for (let a = 0; a < Math.PI * 2; a += 0.3) {
+            const r = 1 + (Math.random() - 0.5) * 0.3;
+            const x = cx + Math.cos(a) * w * 0.5 * r;
+            const y = cy + Math.sin(a) * h * 0.5 * r;
+            if (a === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    const earthTexture = createEarthTexture();
+    const globeGeo = new THREE.SphereGeometry(GLOBE_R, 64, 64);
+    const globeMat = new THREE.MeshPhongMaterial({
+        map: earthTexture,
+        transparent: true,
+        opacity: 0.9,
+        emissive: 0x0a1520,
+        emissiveIntensity: 0.3
+    });
+    const globe = new THREE.Mesh(globeGeo, globeMat);
+    scene.add(globe);
+
+    // Atmosfera
+    const atmoGeo = new THREE.SphereGeometry(GLOBE_R * 1.03, 64, 64);
+    const atmoMat = new THREE.MeshBasicMaterial({
+        color: 0x2266aa, transparent: true, opacity: 0.08, side: THREE.BackSide
+    });
+    scene.add(new THREE.Mesh(atmoGeo, atmoMat));
+
+    // ============ ILUMINAÇÃO ============
+    scene.add(new THREE.AmbientLight(0x223344, 0.5));
+    const sunLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    sunLight.position.set(200, 100, 200);
+    scene.add(sunLight);
+    const fillLight = new THREE.PointLight(0x2244aa, 0.5, 500);
+    fillLight.position.set(-100, -50, -100);
+    scene.add(fillLight);
+
+    // ============ ROTAS ============
+    function latLonToVec3(lat, lon, r) {
+        const phi = (90 - lat) * Math.PI / 180;
+        const theta = (lon + 180) * Math.PI / 180;
+        return new THREE.Vector3(
+            -r * Math.sin(phi) * Math.cos(theta),
+            r * Math.cos(phi),
+            r * Math.sin(phi) * Math.sin(theta)
+        );
+    }
+
+    const routeLines = [];
+    const routeDots = [];
+    const routeMeshes = [];
+
+    DATA.routes.forEach((route, idx) => {
+        const start = latLonToVec3(route.from[0], route.from[1], GLOBE_R + 1);
+        const end = latLonToVec3(route.to[0], route.to[1], GLOBE_R + 1);
+
+        // Arco
+        const mid = start.clone().add(end).multiplyScalar(0.5);
+        const dist = start.distanceTo(end);
+        mid.normalize().multiplyScalar(GLOBE_R + 1 + dist * 0.3);
+
+        const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+        const points = curve.getPoints(60);
+        const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+
+        let color = 0x44aaff;
+        if (route.status === 'warn') color = 0xffaa00;
+        if (route.status === 'crit') color = 0xff4444;
+
+        const lineMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.5 });
+        const line = new THREE.Line(lineGeo, lineMat);
+        scene.add(line);
+        routeLines.push(line);
+
+        // Pontos de origem/destino
+        const dotGeo = new THREE.SphereGeometry(1.2, 8, 8);
+        const dotMat = new THREE.MeshBasicMaterial({ color: 0x44ff88 });
+        const dot1 = new THREE.Mesh(dotGeo, dotMat);
+        dot1.position.copy(start);
+        scene.add(dot1);
+
+        const dot2 = new THREE.Mesh(dotGeo, dotMat.clone());
+        dot2.material.color.setHex(0xffaa44);
+        dot2.position.copy(end);
+        scene.add(dot2);
+
+        routeDots.push({ start, end, mid, curve, speed: 0.3 + Math.random() * 0.4, t: Math.random() });
+        routeMeshes.push({ line, dots: [dot1, dot2], data: route });
+    });
+
+    // ============ ESTRELAS DE FUNDO ============
+    (function() {
+        const geo = new THREE.BufferGeometry();
+        const count = 6000;
+        const pos = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+            const r = 400 + Math.random() * 1000;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            pos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            pos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+            pos[i*3+2] = r * Math.cos(phi);
+        }
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        const mat = new THREE.PointsMaterial({ size: 1, color: 0x8899bb, transparent: true, opacity: 0.6 });
+        scene.add(new THREE.Points(geo, mat));
+    })();
+
+    // ============ PARTÍCULAS DE DADOS (fluxo) ============
+    const flowParticles = [];
+    for (let i = 0; i < 200; i++) {
+        const geo = new THREE.SphereGeometry(0.4, 6, 6);
+        const mat = new THREE.MeshBasicMaterial({
+            color: new THREE.Color().setHSL(0.5 + Math.random() * 0.15, 0.8, 0.6),
+            transparent: true, opacity: 0.7
+        });
+        const p = new THREE.Mesh(geo, mat);
+        const routeIdx = Math.floor(Math.random() * routeDots.length);
+        p.userData = { routeIdx, t: Math.random(), speed: 0.2 + Math.random() * 0.5 };
+        scene.add(p);
+        flowParticles.push(p);
+    }
+
+    // ============ UI: REGIÕES ============
+    const regionsList = document.getElementById('regions-list');
+    DATA.regions.forEach(r => {
+        const statusClass = r.status === 'ok' ? 'ok' : r.status === 'warn' ? 'warn' : 'crit';
+        const barColor = r.status === 'ok' ? '#4caf50' : r.status === 'warn' ? '#ff9800' : '#f44336';
+        regionsList.innerHTML += `
+            <div class="region-row">
+                <span class="region-name">${r.name}</span>
+                <span class="region-status ${statusClass}">${r.sla}%</span>
+            </div>
+            <div class="bar-container"><div class="bar-fill" style="width:${r.load}%; background:${barColor}"></div></div>
+        `;
+    });
+
+    // ============ UI: TRANSPORTE ============
+    const transportList = document.getElementById('transport-list');
+    DATA.transport.forEach(t => {
+        transportList.innerHTML += `
+            <div class="region-row">
+                <span class="region-name">${t.name}</span>
+                <span style="color:#64b5f6">${t.pct}%</span>
+            </div>
+            <div class="bar-container"><div class="bar-fill" style="width:${t.pct}%; background:#4488ff"></div></div>
+        `;
+    });
+
+    // ============ UI: MOEDAS ============
+    const currencyList = document.getElementById('currency-list');
+    DATA.currencies.forEach(c => {
+        currencyList.innerHTML += `
+            <div class="region-row">
+                <span class="region-name">${c.flag} ${c.code}</span>
+                <span style="color:#a0d0ff">1 USD = ${c.rate}</span>
+            </div>
+        `;
+    });
+
+    // ============ UI: ALERTAS ============
+    const alertsList = document.getElementById('alerts-list');
+    DATA.alerts.forEach(a => {
+        alertsList.innerHTML += `
+            <div class="alert-item ${a.type}">
+                <div class="alert-time">${a.time} UTC</div>
+                <div class="alert-msg">${a.msg}</div>
+            </div>
+        `;
+    });
+
+    // ============ UI: PEDIDOS CRÍTICOS ============
+    const criticalOrders = document.getElementById('critical-orders');
+    DATA.criticalOrders.forEach(o => {
+        const color = o.eta === 'OK' ? '#4caf50' : o.eta === 'Em risco' ? '#ff9800' : '#f44336';
+        criticalOrders.innerHTML += `
+            <div class="region-row">
+                <span class="region-name">${o.id}</span>
+                <span style="color:${color}; font-weight:700">${o.eta}</span>
+            </div>
+            <div style="font-size:0.72em; color:#5a6f86; margin-bottom:8px">${o.region} · ${o.value} · ${o.days}d restantes</div>
+        `;
+    });
+
+    // ============ GRÁFICOS (canvas 2D) ============
+    function drawBarChart(canvasId, data, colors) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width = canvas.offsetWidth * 2;
+        const h = canvas.height = canvas.offsetHeight * 2;
+        ctx.clearRect(0, 0, w, h);
+
+        const max = Math.max(...data.map(d => d.value));
+        const barW = w / data.length * 0.6;
+        const gap = w / data.length;
+
+        data.forEach((d, i) => {
+            const x = i * gap + gap * 0.2;
+            const barH = (d.value / max) * h * 0.85;
+            const y = h - barH - 10;
+
+            ctx.fillStyle = colors[i] || '#4488ff';
+            ctx.beginPath();
+            ctx.roundRect(x, y, barW, barH, 4);
+            ctx.fill();
+
+            ctx.fillStyle = '#7a8fa6';
+            ctx.font = '18px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(d.label, x + barW / 2, h - 2);
+        });
+    }
+
+    function drawLineChart(canvasId, data, color) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width = canvas.offsetWidth * 2;
+        const h = canvas.height = canvas.offsetHeight * 2;
+        ctx.clearRect(0, 0, w, h);
+
+        const max = Math.max(...data);
+        const min = Math.min(...data);
+        const range = max - min || 1;
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        data.forEach((v, i) => {
+            const x = (i / (data.length - 1)) * (w - 20) + 10;
+            const y = h - 15 - ((v - min) / range) * (h - 30);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+
+        // Fill
+        ctx.lineTo(w - 10, h - 10);
+        ctx.lineTo(10, h - 10);
+        ctx.closePath();
+        ctx.fillStyle = color.replace(')', ', 0.1)').replace('rgb', 'rgba');
+        ctx.fill();
+
+        // Points
+        data.forEach((v, i) => {
+            const x = (i / (data.length - 1)) * (w - 20) + 10;
+            const y = h - 15 - ((v - min) / range) * (h - 30);
+            ctx.fillStyle = color;
+            ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+        });
+    }
+
+    function drawSLAChart(canvasId, data) {
+        const canvas = document.getElementById(canvasId);
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width = canvas.offsetWidth * 2;
+        const h = canvas.height = canvas.offsetHeight * 2;
+        ctx.clearRect(0, 0, w, h);
+
+        const rowH = h / data.length;
+        data.forEach((d, i) => {
+            const y = i * rowH + rowH * 0.3;
+            const barW = (d.value / 100) * (w - 120);
+            const color = d.value > 95 ? '#4caf50' : d.value > 90 ? '#ff9800' : '#f44336';
+
+            ctx.fillStyle = 'rgba(255,255,255,0.05)';
+            ctx.fillRect(100, y, w - 120, rowH * 0.4);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.roundRect(100, y, barW, rowH * 0.4, 3);
+            ctx.fill();
+
+            ctx.fillStyle = '#a0b8d0';
+            ctx.font = '16px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(d.label, 0, y + rowH * 0.3);
+            ctx.fillStyle = color;
+            ctx.textAlign = 'right';
+            ctx.fillText(d.value + '%', w - 5, y + rowH * 0.3);
+        });
+    }
+
+    // Inicializar gráficos
+    drawBarChart('chart-volume', [
+        { label: 'NA', value: 42 }, { label: 'LATAM', value: 18 },
+        { label: 'EU', value: 38 }, { label: 'APAC', value: 29 },
+        { label: 'MENA', value: 8 }, { label: 'AF', value: 4 }
+    ], ['#4488ff', '#ff6644', '#44ffaa', '#cc88ff', '#ffaa44', '#ff4488']);
+
+    drawLineChart('chart-cost', [4.9, 4.8, 4.85, 4.7, 4.75, 4.68, 4.72], 'rgb(255, 152, 0)');
+
+    drawSLAChart('chart-sla', [
+        { label: 'Transatlântico', value: 97.2 },
+        { label: 'Transpacífico', value: 94.8 },
+        { label: 'Intra-EU', value: 98.1 },
+        { label: 'LATAM', value: 91.3 },
+        { label: 'MENA', value: 89.4 },
+        { label: 'África', value: 82.1 }
+    ]);
+
+    // ============ RAYCASTER (hover no globo) ============
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const tooltip = document.getElementById('tooltip');
+
+    window.addEventListener('mousemove', (e) => {
+        mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
+
+        // Verificar interseção com globo
+        const intersects = raycaster.intersectObject(globe);
+        if (intersects.length > 0) {
+            const point = intersects[0].point;
+            // Converter para lat/lon
+            const lat = 90 - Math.acos(point.y / GLOBE_R) * 180 / Math.PI;
+            const lon = Math.atan2(point.z, -point.x) * 180 / Math.PI - 180;
+
+            // Encontrar região mais próxima
+            let nearest = null;
+            let minDist = 999;
+            const regionCoords = [
+                { name: 'América do Norte', lat: 40, lon: -100 },
+                { name: 'América Latina', lat: -15, lon: -55 },
+                { name: 'Europa', lat: 50, lon: 10 },
+                { name: 'Ásia-Pacífico', lat: 20, lon: 110 },
+                { name: 'Oriente Médio', lat: 25, lon: 50 },
+                { name: 'África', lat: 0, lon: 20 }
+            ];
+            regionCoords.forEach(rc => {
+                const d = Math.sqrt((lat - rc.lat) ** 2 + (lon - rc.lon) ** 2);
+                if (d < minDist) { minDist = d; nearest = rc; }
+            });
+
+            const regionData = DATA.regions.find(r => r.name === nearest.name) || {};
+            tooltip.innerHTML = `
+                <div class="tt-title">${nearest.name}</div>
+                <div class="tt-row"><span class="tt-label">Volume:</span><span class="tt-val">${(regionData.volume || 0).toLocaleString()} un/dia</span></div>
+                <div class="tt-row"><span class="tt-label">Custo/un:</span><span class="tt-val">US$ ${regionData.cost || '—'}</span></div>
+                <div class="tt-row"><span class="tt-label">SLA:</span><span class="tt-val">${regionData.sla || '—'}%</span></div>
+                <div class="tt-row"><span class="tt-label">Carga:</span><span class="tt-val">${regionData.load || '—'}%</span></div>
+            `;
+            tooltip.style.opacity = '1';
+            tooltip.style.left = (e.clientX + 15) + 'px';
+            tooltip.style.top = (e.clientY - 10) + 'px';
+            document.body.style.cursor = 'pointer';
+        } else {
+            tooltip.style.opacity = '0';
+            document.body.style.cursor = 'default';
+        }
+    });
+
+    // ============ ANIMAÇÃO ============
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const t = clock.getElapsedTime();
+
+        // Rotação do globo
+        globe.rotation.y = t * 0.05;
+
+        // Partículas de fluxo nas rotas
+        flowParticles.forEach(p => {
+            const rd = routeDots[p.userData.routeIdx];
+            p.userData.t += p.userData.speed * 0.005;
+            if (p.userData.t > 1) p.userData.t = 0;
+            const pos = rd.curve.getPoint(p.userData.t);
+            p.position.copy(pos);
+            p.material.opacity = Math.sin(p.userData.t * Math.PI) * 0.7;
+        });
+
+        // Pulso dos pontos de rota
+        routeMeshes.forEach((rm, i) => {
+            const pulse = 1 + Math.sin(t * 3 + i) * 0.3;
+            rm.dots.forEach(d => d.scale.set(pulse, pulse, pulse));
+        });
+
+        // Pulso da atmosfera
+        atmoMat.opacity = 0.06 + Math.sin(t * 0.5) * 0.02;
+
+        controls.update();
+        renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Atualizar relógio
+    setInterval(() => {
+        const now = new Date();
+        document.querySelector('#header .status').innerHTML =
+            `<div class="dot"></div> LIVE · ${now.toISOString().substr(11, 8)} UTC`;
+    }, 1000);
+
+    // Atualizar KPIs periodicamente
+    setInterval(() => {
+        const otd = (93 + Math.random() * 2).toFixed(1);
+        document.getElementById('kpi-otd').textContent = otd + '%';
+        const vol = (125 + Math.random() * 10).toFixed(1);
+        document.getElementById('kpi-vol').textContent = vol + 'K';
+    }, 5000);
+
+    animate();
+    </script>
+</body>
+</html>   

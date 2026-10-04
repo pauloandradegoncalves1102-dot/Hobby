@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEX Terminal — Risk & Trading</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #060a12; font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace; color: #c8d6e5; overflow: hidden; }
+
+        /* LAYOUT GRID */
+        #app {
+            display: grid;
+            grid-template-rows: 48px 1fr 32px;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-areas:
+                "header header header"
+                "left center right"
+                "ticker ticker ticker";
+            height: 100vh; width: 100vw;
+        }
+
+        /* HEADER */
+        #header {
+            grid-area: header;
+            background: #0a0f1a;
+            border-bottom: 1px solid #1a2540;
+            display: flex; align-items: center; padding: 0 16px; gap: 20px;
+        }
+        #header .brand { font-size: 0.95em; font-weight: 700; color: #00e676; letter-spacing: 2px; }
+        #header .brand span { color: #ff5252; }
+        #header .tabs { display: flex; gap: 2px; }
+        #header .tab {
+            padding: 4px 12px; font-size: 0.7em; color: #546e7a;
+            border-radius: 4px; cursor: pointer; transition: all 0.15s;
+        }
+        #header .tab:hover { background: #1a2540; color: #90caf9; }
+        #header .tab.active { background: #1a2540; color: #00e676; font-weight: 700; }
+        #header .clock { margin-left: auto; font-size: 0.75em; color: #546e7a; }
+        #header .conn { display: flex; align-items: center; gap: 6px; font-size: 0.7em; color: #00e676; }
+        #header .conn::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #00e676; animation: blink 1.5s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+        /* LEFT PANEL */
+        #left {
+            grid-area: left;
+            background: #080d18;
+            border-right: 1px solid #1a2540;
+            overflow-y: auto; padding: 12px;
+        }
+        .panel-title {
+            font-size: 0.65em; color: #546e7a; text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 10px; padding-bottom: 6px;
+            border-bottom: 1px solid #1a2540;
+        }
+        .asset-row {
+            display: grid; grid-template-columns: 1fr 60px 50px;
+            gap: 4px; padding: 5px 0; font-size: 0.72em;
+            border-bottom: 1px solid #0d1525; cursor: pointer; transition: background 0.1s;
+        }
+        .asset-row:hover { background: #0d1a30; }
+        .asset-row .sym { color: #e0f0ff; font-weight: 600; }
+        .asset-row .price { color: #90caf9; text-align: right; }
+        .asset-row .chg { text-align: right; font-weight: 600; }
+        .asset-row .chg.up { color: #00e676; }
+        .asset-row .chg.down { color: #ff5252; }
+
+        .risk-gauge {
+            margin: 12px 0; padding: 10px;
+            background: #0a1020; border-radius: 6px;
+            border: 1px solid #1a2540;
+        }
+        .risk-gauge .gauge-label { font-size: 0.65em; color: #546e7a; margin-bottom: 6px; }
+        .risk-gauge .gauge-value { font-size: 1.3em; font-weight: 700; }
+        .risk-gauge .gauge-bar { height: 4px; background: #1a2540; border-radius: 2px; margin-top: 8px; }
+        .risk-gauge .gauge-fill { height: 100%; border-radius: 2px; transition: width 1s; }
+
+        /* CENTER */
+        #center {
+            grid-area: center;
+            display: grid;
+            grid-template-rows: 1fr 200px;
+            grid-template-columns: 1fr 1fr;
+            grid-template-areas: "chart3d chart3d" "chart2d table";
+            gap: 1px; background: #1a2540;
+        }
+        .center-panel {
+            background: #060a12; padding: 12px; position: relative; overflow: hidden;
+        }
+        #panel-3d { grid-area: chart3d; }
+        #panel-2d { grid-area: chart2d; }
+        #panel-table { grid-area: table; overflow-y: auto; }
+
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+        }
+        .panel-header h3 { font-size: 0.72em; color: #78909c; font-weight: 600; }
+        .panel-header .badge {
+            font-size: 0.6em; padding: 2px 8px; border-radius: 3px;
+            background: #1a2540; color: #90caf9;
+        }
+
+        /* RIGHT PANEL */
+        #right {
+            grid-area: right;
+            background: #080d18;
+            border-left: 1px solid #1a2540;
+            overflow-y: auto; padding: 12px;
+        }
+        .order-book { font-size: 0.68em; }
+        .ob-header { display: grid; grid-template-columns: 1fr 1fr 1fr; color: #546e7a; padding: 4px 0; border-bottom: 1px solid #1a2540; }
+        .ob-row { display: grid; grid-template-columns: 1fr 1fr 1fr; padding: 2px 0; position: relative; }
+        .ob-row .ob-bg { position: absolute; top: 0; right: 0; height: 100%; opacity: 0.1; transition: width 0.3s; }
+        .ob-row.ask .ob-bg { background: #ff5252; }
+        .ob-row.bid .ob-bg { background: #00e676; }
+        .ob-row .ob-price { font-weight: 600; }
+        .ob-row.ask .ob-price { color: #ff5252; }
+        .ob-row.bid .ob-price { color: #00e676; }
+        .ob-row .ob-size { color: #90a4ae; text-align: center; }
+        .ob-row .ob-total { color: #546e7a; text-align: right; }
+        .ob-spread { text-align: center; padding: 6px 0; color: #ffab40; font-size: 1.1em; border-top: 1px solid #1a2540; border-bottom: 1px solid #1a2540; margin: 4px 0; }
+
+        .news-item {
+            padding: 8px 0; border-bottom: 1px solid #0d1525;
+            font-size: 0.7em; line-height: 1.5;
+        }
+        .news-item .news-time { color: #546e7a; font-size: 0.85em; }
+        .news-item .news-src { color: #90caf9; font-weight: 600; }
+        .news-item .news-text { color: #b0bec5; }
+
+        /* TICKER */
+        #ticker {
+            grid-area: ticker;
+            background: #0a0f1a;
+            border-top: 1px solid #1a2540;
+            overflow: hidden; white-space: nowrap;
+            display: flex; align-items: center;
+        }
+        #ticker-inner {
+            display: flex; gap: 32px; animation: scroll 30s linear infinite;
+            font-size: 0.7em;
+        }
+        @keyframes scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+        .ticker-item { display: flex; gap: 8px; }
+        .ticker-item .t-sym { color: #78909c; }
+        .ticker-item .t-val { font-weight: 600; }
+        .ticker-item .t-chg.up { color: #00e676; }
+        .ticker-item .t-chg.down { color: #ff5252; }
+
+        /* TOOLTIP */
+        #tooltip {
+            position: fixed; background: rgba(6,10,18,0.96);
+            border: 1px solid #1a2540; border-radius: 6px;
+            padding: 10px 14px; font-size: 0.72em;
+            pointer-events: none; opacity: 0; transition: opacity 0.15s;
+            z-index: 100; min-width: 200px;
+        }
+        #tooltip .tt-title { color: #00e676; font-weight: 700; margin-bottom: 6px; }
+        #tooltip .tt-row { display: flex; justify-content: space-between; padding: 2px 0; }
+        #tooltip .tt-l { color: #546e7a; }
+        #tooltip .tt-v { color: #e0f0ff; font-weight: 600; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1a2540; border-radius: 2px; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div id="header">
+        <div class="brand">APEX<span>TERMINAL</span></div>
+        <div class="tabs">
+            <div class="tab active">RISK</div>
+            <div class="tab">TRADE</div>
+            <div class="tab">PORTFOLIO</div>
+            <div class="tab">FX</div>
+            <div class="tab">COMMODITIES</div>
+            <div class="tab">FIXED INCOME</div>
+            <div class="tab">REPORTS</div>
+        </div>
+        <div class="clock" id="clock">--:--:-- UTC</div>
+        <div class="conn">LIVE FEED</div>
+    </div>
+
+    <div id="left">
+        <div class="panel-title">Watchlist</div>
+        <div id="watchlist"></div>
+
+        <div class="panel-title" style="margin-top:16px">Risk Metrics</div>
+        <div class="risk-gauge">
+            <div class="gauge-label">VaR 99% (1-day)</div>
+            <div class="gauge-value" style="color:#ff5252" id="var-value">-$14.2M</div>
+            <div class="gauge-bar"><div class="gauge-fill" style="width:72%; background:linear-gradient(90deg,#ff5252,#ffab40)"></div></div>
+        </div>
+        <div class="risk-gauge">
+            <div class="gauge-label">Stress: -20% Equity</div>
+            <div class="gauge-value" style="color:#ffab40" id="stress-value">-$89.4M</div>
+            <div class="gauge-bar"><div class="gauge-fill" style="width:55%; background:linear-gradient(90deg,#ffab40,#ff5252)"></div></div>
+        </div>
+        <div class="risk-gauge">
+            <div class="gauge-label">Liquidity Coverage</div>
+            <div class="gauge-value" style="color:#00e676" id="liquidity-value">187%</div>
+            <div class="gauge-bar"><div class="gauge-fill" style="width:87%; background:linear-gradient(90deg,#00e676,#69f0ae)"></div></div>
+        </div>
+        <div class="risk-gauge">
+            <div class="gauge-label">Net Exposure</div>
+            <div class="gauge-value" style="color:#90caf9" id="exposure-value">+$2.41B</div>
+            <div class="gauge-bar"><div class="gauge-fill" style="width:64%; background:#448aff"></div></div>
+        </div>
+
+        <div class="panel-title" style="margin-top:16px">Correlation Matrix</div>
+        <canvas id="corr-matrix" width="256" height="180"></canvas>
+    </div>
+
+    <div id="center">
+        <div class="center-panel" id="panel-3d">
+            <div class="panel-header">
+                <h3>PORTFOLIO VOLATILITY SURFACE</h3>
+                <div class="badge">3D · REALTIME</div>
+            </div>
+            <canvas id="vol-canvas" style="width:100%;height:calc(100% - 30px)"></canvas>
+        </div>
+        <div class="center-panel" id="panel-2d">
+            <div class="panel-header">
+                <h3 id="chart-symbol">EUR/USD · 1H</h3>
+                <div class="badge" id="chart-price">1.0847</div>
+            </div>
+            <canvas id="candle-canvas" style="width:100%;height:calc(100% - 30px)"></canvas>
+        </div>
+        <div class="center-panel" id="panel-table">
+            <div class="panel-header">
+                <h3>OPEN POSITIONS</h3>
+                <div class="badge" id="pos-count">14</div>
+            </div>
+            <div id="positions-table"></div>
+        </div>
+    </div>
+
+    <div id="right">
+        <div class="panel-title">Order Book — EUR/USD</div>
+        <div class="order-book" id="order-book"></div>
+
+        <div class="panel-title" style="margin-top:16px">Market News</div>
+        <div id="news-feed"></div>
+
+        <div class="panel-title" style="margin-top:16px">P&L by Desk</div>
+        <div id="pnl-desk"></div>
+    </div>
+
+    <div id="ticker">
+        <div id="ticker-inner"></div>
+    </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ============ DATA ============
+const ASSETS = [
+    { sym: 'EUR/USD', price: 1.0847, chg: 0.023, vol: 0.00012 },
+    { sym: 'USD/JPY', price: 149.23, chg: -0.145, vol: 0.00034 },
+    { sym: 'GBP/USD', price: 1.2712, chg: 0.018, vol: 0.00018 },
+    { sym: 'AUD/USD', price: 0.6534, chg: 0.041, vol: 0.00022 },
+    { sym: 'USD/BRL', price: 5.4280, chg: -0.312, vol: 0.00089 },
+    { sym: 'XAU/USD', price: 2387.4, chg: 1.24, vol: 0.00045 },
+    { sym: 'WTI', price: 78.42, chg: -0.87, vol: 0.00112 },
+    { sym: 'BTC/USD', price: 67420, chg: 2.34, vol: 0.00312 },
+    { sym: 'ES', price: 5342.25, chg: 0.45, vol: 0.00028 },
+    { sym: 'N10Y', price: 4.283, chg: -0.012, vol: 0.00008 }
+];
+
+const POSITIONS = [
+    { sym: 'EUR/USD', side: 'LONG', size: '50M', entry: 1.0812, current: 1.0847, pnl: '+$175K', risk: 'LOW' },
+    { sym: 'XAU/USD', side: 'LONG', size: '200oz', entry: 2365.0, current: 2387.4, pnl: '+$4.5K', risk: 'LOW' },
+    { sym: 'WTI', side: 'SHORT', size: '500bbl', entry: 79.80, current: 78.42, pnl: '+$690K', risk: 'MED' },
+    { sym: 'BTC/USD', side: 'LONG', size: '2.5 BTC', entry: 64200, current: 67420, pnl: '+$8.05K', risk: 'HIGH' },
+    { sym: 'ES', side: 'LONG', size: '200ct', entry: 5310, current: 5342.25, pnl: '+$6.45K', risk: 'MED' },
+    { sym: 'USD/BRL', side: 'SHORT', size: '30M', entry: 5.4450, current: 5.4280, pnl: '+$510K', risk: 'MED' },
+    { sym: 'N10Y', side: 'LONG', size: '$100M', entry: 4.31, current: 4.283, pnl: '+$2.7M', risk: 'LOW' },
+    { sym: 'GBP/JPY', side: 'SHORT', size: '20M', entry: 189.80, current: 190.12, pnl: '-$64K', risk: 'MED' },
+    { sym: 'DAX', side: 'LONG', size: '100ct', entry: 18240, current: 18312, pnl: '+$7.2K', risk: 'LOW' },
+    { sym: 'COPPER', side: 'LONG', size: '1000t', entry: 9450, current: 9523, pnl: '+$73K', risk: 'MED' },
+    { sym: 'B3', side: 'LONG', size: '500ct', entry: 124500, current: 125200, pnl: '+$350K', risk: 'LOW' },
+    { sym: 'USOIL', side: 'SHORT', size: '200bbl', entry: 79.10, current: 78.42, pnl: '+$136K', risk: 'MED' },
+    { sym: 'ETH/USD', side: 'LONG', size: '15 ETH', entry: 3420, current: 3587, pnl: '+$2.5K', risk: 'HIGH' },
+    { sym: 'SOL', side: 'SHORT', size: '5000', entry: 142.5, current: 139.8, pnl: '+$13.5K', risk: 'HIGH' }
+];
+
+const NEWS = [
+    { time: '12:44', src: 'REUTERS', text: 'Fed minutes: officials split on September cut path, Powell signals data-dependency' },
+    { time: '12:38', src: 'BLOOMBERG', text: 'ECB Lagarde: "Inflation trajectory encouraging" — market prices 75% for 25bp cut' },
+    { time: '12:31', src: 'FT', text: 'China PMI beats at 50.4; yuan strengthens 300bp on trade data surprise' },
+    { time: '12:22', src: 'WSJ', text: 'Gold hits $2,387 as geopolitical premium persists; ETF inflows $420M' },
+    { time: '12:15', src: 'BLOOMBERG', text: 'Brent surges 3% after OPEC+ extends cuts; WTI retests $78 support' },
+    { time: '12:08', src: 'REUTERS', text: 'BRL breaks 5.43 as Selic expectations shift; CVM flags FX volatility' },
+    { time: '11:58', src: 'FT', text: 'Bitcoin ETF approvals: BlackRock IBIT sees $1.2B net inflow in 48h' },
+    { time: '11:45', src: 'BLOOMBERG', text: 'US 10Y yield drops to 4.28% on weak NFP; curve steepens 5bp' }
+];
+
+const DESKS = [
+    { name: 'FX', pnl: '+$12.4M', pct: 87 },
+    { name: 'Rates', pnl: '+$8.2M', pct: 62 },
+    { name: 'Equities', pnl: '+$3.1M', pct: 34 },
+    { name: 'Commodities', pnl: '-$1.8M', pct: 22 },
+    { name: 'Crypto', pnl: '+$2.4M', pct: 45 },
+    { name: 'EM Debt', pnl: '+$5.6M', pct: 58 }
+];
+
+// ============ WATCHLIST ============
+const watchlist = document.getElementById('watchlist');
+ASSETS.forEach(a => {
+    const cls = a.chg >= 0 ? 'up' : 'down';
+    const arrow = a.chg >= 0 ? '▲' : '▼';
+    watchlist.innerHTML += `
+        <div class="asset-row" data-sym="${a.sym}">
+            <span class="sym">${a.sym}</span>
+            <span class="price">${a.price.toFixed(a.price > 100 ? 2 : 4)}</span>
+            <span class="chg ${cls}">${arrow} ${Math.abs(a.chg).toFixed(2)}%</span>
+        </div>`;
+});
+
+// ============ POSITIONS TABLE ============
+const posTable = document.getElementById('positions-table');
+let posHtml = `<div style="display:grid;grid-template-columns:1fr 50px 50px 60px 60px 60px 40px;font-size:0.62em;color:#546e7a;padding:4px 0;border-bottom:1px solid #1a2540">
+    <span>SYMBOL</span><span>SIDE</span><span>SIZE</span><span>ENTRY</span><span>MARK</span><span>P&L</span><span>RISK</span>
+</div>`;
+POSITIONS.forEach(p => {
+    const pnlColor = p.pnl.startsWith('+') ? '#00e676' : '#ff5252';
+    const riskColor = p.risk === 'LOW' ? '#00e676' : p.risk === 'MED' ? '#ffab40' : '#ff5252';
+    posHtml += `<div style="display:grid;grid-template-columns:1fr 50px 50px 60px 60px 60px 40px;font-size:0.62em;padding:3px 0;border-bottom:1px solid #0d1525">
+        <span style="color:#e0f0ff;font-weight:600">${p.sym}</span>
+        <span style="color:${p.side==='LONG'?'#00e676':'#ff5252'}">${p.side}</span>
+        <span style="color:#90a4ae">${p.size}</span>
+        <span style="color:#78909c">${p.entry}</span>
+        <span style="color:#90caf9">${p.current}</span>
+        <span style="color:${pnlColor};font-weight:600">${p.pnl}</span>
+        <span style="color:${riskColor}">${p.risk}</span>
+    </div>`;
+});
+posTable.innerHTML = posHtml;
+
+// ============ ORDER BOOK ============
+const ob = document.getElementById('order-book');
+let obHtml = `<div class="ob-header"><span>PRICE</span><span>SIZE</span><span>TOTAL</span></div>`;
+let total = 0;
+for (let i = 5; i >= 1; i--) {
+    const price = (1.0847 + i * 0.0001).toFixed(4);
+    const size = Math.floor(Math.random() * 50 + 5);
+    total += size;
+    obHtml += `<div class="ob-row ask"><div class="ob-bg" style="width:${size*2}%"></div><span class="ob-price">${price}</span><span class="ob-size">${size}M</span><span class="ob-total">${total}M</span></div>`;
+}
+obHtml += `<div class="ob-spread">SPREAD: 0.0001 (0.1 pip)</div>`;
+total = 0;
+for (let i = 1; i <= 5; i++) {
+    const price = (1.0847 - i * 0.0001).toFixed(4);
+    const size = Math.floor(Math.random() * 50 + 5);
+    total += size;
+    obHtml += `<div class="ob-row bid"><div class="ob-bg" style="width:${size*2}%"></div><span class="ob-price">${price}</span><span class="ob-size">${size}M</span><span class="ob-total">${total}M</span></div>`;
+}
+ob.innerHTML = obHtml;
+
+// ============ NEWS ============
+const newsFeed = document.getElementById('news-feed');
+NEWS.forEach(n => {
+    newsFeed.innerHTML += `<div class="news-item"><span class="news-time">${n.time}</span> <span class="news-src">[${n.src}]</span> <span class="news-text">${n.text}</span></div>`;
+});
+
+// ============ P&L DESKS ============
+const pnlDesk = document.getElementById('pnl-desk');
+DESKS.forEach(d => {
+    const color = d.pnl.startsWith('+') ? '#00e676' : '#ff5252';
+    pnlDesk.innerHTML += `
+        <div style="display:flex;justify-content:space-between;font-size:0.7em;padding:4px 0;border-bottom:1px solid #0d1525">
+            <span style="color:#90a4ae">${d.name}</span>
+            <span style="color:${color};font-weight:600">${d.pnl}</span>
+        </div>
+        <div style="height:3px;background:#1a2540;border-radius:2px;margin-bottom:6px">
+            <div style="height:100%;width:${d.pct}%;background:${color};border-radius:2px"></div>
+        </div>`;
+});
+
+// ============ TICKER ============
+const tickerInner = document.getElementById('ticker-inner');
+let tickerHtml = '';
+for (let rep = 0; rep < 2; rep++) {
+    ASSETS.forEach(a => {
+        const cls = a.chg >= 0 ? 'up' : 'down';
+        tickerHtml += `<div class="ticker-item"><span class="t-sym">${a.sym}</span><span class="t-val">${a.price.toFixed(a.price > 100 ? 2 : 4)}</span><span class="t-chg ${cls}">${a.chg >= 0 ? '+' : ''}${a.chg.toFixed(2)}%</span></div>`;
+    });
+}
+tickerInner.innerHTML = tickerHtml;
+
+// ============ CANDLESTICK CHART ============
+function drawCandles(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width = canvas.offsetWidth * 2;
+    const h = canvas.height = canvas.offsetHeight * 2;
+    ctx.clearRect(0, 0, w, h);
+
+    const candles = 60;
+    const data = [];
+    let price = 1.0847;
+    for (let i = 0; i < candles; i++) {
+        const open = price;
+        const change = (Math.random() - 0.48) * 0.0015;
+        const close = open + change;
+        const high = Math.max(open, close) + Math.random() * 0.0005;
+        const low = Math.min(open, close) - Math.random() * 0.0005;
+        const volume = Math.random() * 100 + 20;
+        data.push({ open, close, high, low, volume });
+        price = close;
+    }
+
+    const min = Math.min(...data.map(d => d.low));
+    const max = Math.max(...data.map(d => d.high));
+    const range = max - min;
+    const pad = 20;
+    const chartH = h - pad * 2;
+    const barW = (w - 40) / candles;
+
+    // Grid
+    ctx.strokeStyle = 'rgba(26,37,64,0.5)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+        const y = pad + (i / 5) * chartH;
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        ctx.fillStyle = '#37474f';
+        ctx.font = '10px monospace';
+        ctx.fillText((max - (i / 5) * range).toFixed(4), w - 55, y + 4);
+    }
+
+    // Candles
+    data.forEach((d, i) => {
+        const x = 20 + i * barW + barW * 0.15;
+        const bw = barW * 0.7;
+        const isUp = d.close >= d.open;
+        const color = isUp ? '#00e676' : '#ff5252';
+
+        const yO = pad + ((max - d.open) / range) * chartH;
+        const yC = pad + ((max - d.close) / range) * chartH;
+        const yH = pad + ((max - d.high) / range) * chartH;
+        const yL = pad + ((max - d.low) / range) * chartH;
+
+        // Wick
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(x + bw/2, yH); ctx.lineTo(x + bw/2, yL); ctx.stroke();
+
+        // Body
+        ctx.fillStyle = color;
+        const bodyTop = Math.min(yO, yC);
+        const bodyH = Math.max(Math.abs(yC - yO), 2);
+        ctx.fillRect(x, bodyTop, bw, bodyH);
+
+        // Volume
+        const volH = (d.volume / 120) * 30;
+        ctx.fillStyle = isUp ? 'rgba(0,230,118,0.2)' : 'rgba(255,82,82,0.2)';
+        ctx.fillRect(x, h - 10 - volH, bw, volH);
+    });
+
+    // MA line
+    ctx.strokeStyle = '#ffab40';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 9; i < data.length; i++) {
+        const ma = data.slice(i-9, i+1).reduce((s, d) => s + d.close, 0) / 10;
+        const x = 20 + i * barW + barW * 0.5;
+        const y = pad + ((max - ma) / range) * chartH;
+        if (i === 9) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+}
+drawCandles('candle-canvas');
+
+// ============ CORRELATION MATRIX ============
+function drawCorrMatrix() {
+    const canvas = document.getElementById('corr-matrix');
+    const ctx = canvas.getContext('2d');
+    const syms = ['EUR', 'USD', 'JPY', 'GOLD', 'OIL', 'BTC', 'ES', 'B3'];
+    const n = syms.length;
+    const cellW = 256 / n;
+    const cellH = 180 / n;
+
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            const val = i === j ? 1 : (Math.random() * 2 - 1) * 0.8;
+            const r = val > 0 ? Math.floor(val * 200) : 0;
+            const g = val > 0 ? 200 : Math.floor((-val) * 200);
+            const b = 50;
+            ctx.fillStyle = `rgb(${r},${g},${b})`;
+            ctx.globalAlpha = 0.6;
+            ctx.fillRect(j * cellW, i * cellH, cellW - 1, cellH - 1);
+            ctx.globalAlpha = 1;
+            ctx.fillStyle = '#fff';
+            ctx.font = '8px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText(val.toFixed(1), j * cellW + cellW/2, i * cellH + cellH/2 + 3);
+        }
+        ctx.fillStyle = '#78909c';
+        ctx.font = '8px monospace';
+        ctx.textAlign = 'left';
+        ctx.fillText(syms[i], 0, i * cellH + cellH + 8);
+    }
+}
+drawCorrMatrix();
+
+// ============ 3D VOLATILITY SURFACE ============
+const volCanvas = document.getElementById('vol-canvas');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(45, volCanvas.offsetWidth / volCanvas.offsetHeight, 0.1, 1000);
+camera.position.set(0, 35, 55);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ canvas: volCanvas, antialias: true, alpha: true });
+renderer.setSize(volCanvas.offsetWidth, volCanvas.offsetHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x060a12);
+
+scene.add(new THREE.AmbientLight(0x223344, 0.6));
+const dirLight = new THREE.DirectionalLight(0x66aaff, 1);
+dirLight.position.set(5, 10, 5);
+scene.add(dirLight);
+
+// Volatility surface
+const surfW = 40, surfH = 30, segW = 60, segH = 40;
+const surfGeo = new THREE.PlaneGeometry(surfW, surfH, segW, segH);
+const positions = surfGeo.attributes.position;
+for (let i = 0; i < positions.count; i++) {
+    const x = positions.getX(i);
+    const y = positions.getY(i);
+    const vol = 0.02 + 0.08 * Math.exp(-((x*x)/(2*8*8) + (y*y)/(2*5*5))) + 0.01 * Math.sin(x*0.5) * Math.cos(y*0.3);
+    positions.setZ(i, vol * 150);
+}
+surfGeo.computeVertexNormals();
+
+const surfMat = new THREE.MeshPhongMaterial({
+    color: 0x1565c0,
+    emissive: 0x0d2137,
+    transparent: true,
+    opacity: 0.7,
+    side: THREE.DoubleSide,
+    wireframe: false,
+    shininess: 80
+});
+const surf = new THREE.Mesh(surfGeo, surfMat);
+surf.rotation.x = -Math.PI / 2;
+scene.add(surf);
+
+// Wireframe overlay
+const wireMat = new THREE.MeshBasicMaterial({ color: 0x448aff, wireframe: true, transparent: true, opacity: 0.15 });
+const wire = new THREE.Mesh(surfGeo.clone(), wireMat);
+wire.rotation.x = -Math.PI / 2;
+wire.position.z = 0.1;
+scene.add(wire);
+
+// Grid
+const gridHelper = new THREE.GridHelper(50, 20, 0x1a2540, 0x0d1525);
+gridHelper.position.y = -2;
+scene.add(gridHelper);
+
+// Axis labels (simple lines)
+const axisMat = new THREE.LineBasicMaterial({ color: 0x37474f });
+const axisGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-25,0,0), new THREE.Vector3(25,0,0)]);
+scene.add(new THREE.Line(axisGeo, axisMat));
+const axisGeo2 = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,-15), new THREE.Vector3(0,0,15)]);
+scene.add(new THREE.Line(axisGeo2, axisMat));
+
+// Particles on surface
+const partGeo = new THREE.BufferGeometry();
+const partCount = 500;
+const partPos = new Float32Array(partCount * 3);
+const partData = [];
+for (let i = 0; i < partCount; i++) {
+    const x = (Math.random() - 0.5) * surfW;
+    const y = (Math.random() - 0.5) * surfH;
+    const vol = 0.02 + 0.08 * Math.exp(-((x*x)/(2*8*8) + (y*y)/(2*5*5)));
+    partPos[i*3] = x;
+    partPos[i*3+1] = vol * 150 + 0.5;
+    partPos[i*3+2] = y;
+    partData.push({ x, y, speed: 0.2 + Math.random() * 0.5, t: Math.random() });
+}
+partGeo.setAttribute('position', new THREE.BufferAttribute(partPos, 3));
+const partMat = new THREE.PointsMaterial({ size: 0.4, color: 0x00e676, transparent: true, opacity: 0.7 });
+const particles = new THREE.Points(partGeo, partMat);
+scene.add(particles);
+
+// Raycaster for 3D
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const tooltip = document.getElementById('tooltip');
+
+volCanvas.addEventListener('mousemove', (e) => {
+    const rect = volCanvas.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObject(surf);
+    if (intersects.length > 0) {
+        const p = intersects[0].point;
+        const moneyness = (p.x / surfW * 2 + 1).toFixed(2);
+        const tenor = (p.z / surfH * 2 + 1).toFixed(2);
+        const vol = (p.y / 150 * 100).toFixed(2);
+        tooltip.innerHTML = `
+            <div class="tt-title">Vol Surface</div>
+            <div class="tt-row"><span class="tt-l">Moneyness:</span><span class="tt-v">${moneyness}%</span></div>
+            <div class="tt-row"><span class="tt-l">Tenor:</span><span class="tt-v">${tenor}y</span></div>
+            <div class="tt-row"><span class="tt-l">Implied Vol:</span><span class="tt-v">${vol}%</span></div>
+            <div class="tt-row"><span class="tt-l">Skew:</span><span class="tt-v">${(Math.random()*4-2).toFixed(2)}</span></div>
+            <div class="tt-row"><span class="tt-l">Term:</span><span class="tt-v">${(Math.random()*8+2).toFixed(2)}</span></div>
+        `;
+        tooltip.style.opacity = '1';
+        tooltip.style.left = (e.clientX + 15) + 'px';
+        tooltip.style.top = (e.clientY - 10) + 'px';
+    } else {
+        tooltip.style.opacity = '0';
+    }
+});
+volCanvas.addEventListener('mouseleave', () => { tooltip.style.opacity = '0'; });
+
+// ============ ANIMATION ============
+const clock = new THREE.Clock();
+let camAngle = 0;
+
+function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    // Orbit camera
+    camAngle = t * 0.15;
+    camera.position.x = Math.sin(camAngle) * 55;
+    camera.position.z = Math.cos(camAngle) * 55;
+    camera.position.y = 30 + Math.sin(t * 0.3) * 5;
+    camera.lookAt(0, 3, 0);
+
+    // Animate particles
+    const pp = particles.geometry.attributes.position;
+    for (let i = 0; i < partCount; i++) {
+        const d = partData[i];
+        d.t += d.speed * 0.003;
+        if (d.t > 1) d.t = 0;
+        const x = d.x + Math.sin(d.t * Math.PI * 2) * 2;
+        const y = d.y + Math.cos(d.t * Math.PI * 2) * 1;
+        const vol = 0.02 + 0.08 * Math.exp(-((x*x)/(2*8*8) + (y*y)/(2*5*5)));
+        pp.setXYZ(i, x, vol * 150 + 0.5, y);
+    }
+    pp.needsUpdate = true;
+
+    // Pulse surface
+    surfMat.emissiveIntensity = 0.3 + Math.sin(t * 0.5) * 0.1;
+
+    renderer.render(scene, camera);
+}
+animate();
+
+// ============ CLOCK ============
+setInterval(() => {
+    const now = new Date();
+    document.getElementById('clock').textContent = now.toISOString().substr(11, 8) + ' UTC';
+}, 1000);
+
+// ============ LIVE PRICE UPDATES ============
+setInterval(() => {
+    ASSETS.forEach(a => {
+        a.price += (Math.random() - 0.5) * a.vol * a.price;
+        a.chg += (Math.random() - 0.5) * 0.01;
+    });
+    // Update watchlist
+    document.querySelectorAll('.asset-row').forEach((row, i) => {
+        const a = ASSETS[i];
+        row.querySelector('.price').textContent = a.price.toFixed(a.price > 100 ? 2 : 4);
+        const chgEl = row.querySelector('.chg');
+        chgEl.textContent = `${a.chg >= 0 ? '▲' : '▼'} ${Math.abs(a.chg).toFixed(2)}%`;
+        chgEl.className = `chg ${a.chg >= 0 ? 'up' : 'down'}`;
+    });
+    // Update chart price badge
+    document.getElementById('chart-price').textContent = fetch('/api/market-data')[0].price.toFixed(4);
+
+    // Update VaR
+    const varVal = (12 + Math.random() * 4).toFixed(1);
+    document.getElementById('var-value').textContent = `-$${varVal}M`;
+}, 2000);
+
+// Resize
+window.addEventListener('resize', () => {
+    const w = volCanvas.offsetWidth;
+    const h = volCanvas.offsetHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+});
+</script>
+</body>
+</html>   
