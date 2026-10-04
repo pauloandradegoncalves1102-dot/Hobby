@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Nexus Hub - Sistemas Integrados</title>
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        :root { --bg-cyber: #040508; --panel-glass: rgba(15, 18, 36, 0.85); --neon-blue: #00f0ff; --text-main: #f1f5f9; --text-muted: #64748b; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; background: var(--bg-cyber); color: var(--text-main); line-height: 1.6; }
+        nav { position: fixed; top: 0; width: 100%; z-index: 1000; background: rgba(4,5,8,0.95); border-bottom: 1px solid rgba(0,240,255,0.15); display: flex; justify-content: space-between; align-items: center; padding: 20px 8%; backdrop-filter: blur(10px); }
+        .logo { font-family: 'Orbitron', sans-serif; font-size: 22px; color: var(--neon-blue); text-shadow: 0 0 10px rgba(0,240,255,0.3); }
+        .nav-links { display: flex; gap: 25px; list-style: none; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; text-transform: uppercase; transition: 0.3s; }
+        .nav-links a:hover, .nav-links a.active { color: var(--neon-blue); text-shadow: 0 0 8px var(--neon-blue); }
+        header { padding: 180px 8% 80px 8%; text-align: center; }
+        header h1 { font-family: 'Orbitron', sans-serif; font-size: 46px; margin-bottom: 15px; background: linear-gradient(90deg, #00f0ff, #bd00ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; padding: 0 8% 80px 8%; }
+        .card { background: var(--panel-glass); border: 1px solid rgba(255,255,255,0.05); padding: 40px 30px; border-radius: 12px; text-align: center; transition: 0.4s; }
+        .card:hover { transform: translateY(-5px); border-color: var(--neon-blue); box-shadow: 0 0 20px rgba(0,240,255,0.15); }
+        .card i { font-size: 40px; color: var(--neon-blue); margin-bottom: 20px; }
+        .btn { background: rgba(0, 240, 255, 0.05); border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 12px 24px; border-radius: 6px; font-family: 'Orbitron', sans-serif; font-size: 12px; cursor: pointer; text-decoration: none; display: inline-block; margin-top: 15px; }
+        .btn:hover { background: var(--neon-blue); color: #000; box-shadow: 0 0 15px var(--neon-blue); }
+        .section-block { padding: 80px 8%; background: rgba(255,255,255,0.01); border-top: 1px solid rgba(255,255,255,0.03); }
+        .section-title { font-family: 'Orbitron', sans-serif; font-size: 28px; margin-bottom: 30px; color: var(--neon-blue); }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; text-align: left; }
+        .form-group label { font-family: 'Rajdhani', sans-serif; font-size: 14px; color: var(--text-muted); text-transform: uppercase; }
+        .form-group input, .form-group textarea { padding: 12px; background: #0c0e14; border: 1px solid rgba(255,255,255,0.1); color: white; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">NEXUS.HUB</div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="programação.html">Programação</a></li>
+            <li><a href="música.html">Música</a></li>
+            <li><a href="infraestrutura.html">Infraestrutura</a></li>
+        </ul>
+    </nav>
+
+    <header>
+        <h1>Ecossistema Avançado de Tecnologia & Artes</h1>
+        <p>A plataforma definitiva para homologação de serviços de engenharia, centro linguístico e performance orquestral.</p>
+    </header>
+
+    <main class="grid">
+        <div class="card"><i class="fa-solid fa-code"></i><h3>Software Engineering</h3><p>Trilhas computacionais avançadas e squads de resolução de bugs complexos.</p><a href="programação.html" class="btn">Acessar Terminal</a></div>
+        <div class="card"><i class="fa-solid fa-music"></i><h3>Orquestra & Teoria</h3><p>Ensino avançado de 14 instrumentos clássicos e eixos de harmonia sinfônica.</p><a href="música.html" class="btn">Abrir Conservatório</a></div>
+        <div class="card"><i class="fa-solid fa-bolt"></i><h3>Automação & Elétrica</h3><p>Comandos mecânicos, diagramação industrial e programação especialista em CLP.</p><a href="infraestrutura.html" class="btn">Iniciar Sistemas</a></div>
+    </main>
+
+    <section class="section-block" id="quem-somos">
+        <h2 class="section-title">Quem Somos Nós</h2>
+        <p style="color: var(--text-muted); max-width: 800px;">Fundada sob os pilares da engenharia reversa e alta performance cognitiva, a Nexus atua como um hub multidisciplinar corporativo. Desenvolvemos infraestruturas estáveis de software, automações eletromecânicas e capacitação de equipes multinacionais através de módulos linguísticos e música instrumental de alta fidelidade técnica.</p>
+    </section>
+
+    <section class="section-block" id="ouvidoria" style="max-width: 700px; margin: 0 auto; text-align: center;">
+        <h2 class="section-title">Canal de Ouvidoria & Reclamações</h2>
+        <form onsubmit="alert('Ouvidoria: Sua manifestação foi criptografada e enviada para análise da governança.'); this.reset(); return false;">
+            <div class="form-group"><label>Protocolo/Nome Comercial</label><input type="text" required></div>
+            <div class="form-group"><label>Detalhamento da Ocorrência</label><textarea rows="4" required placeholder="Descreva o incidente operacional..."></textarea></div>
+            <button type="submit" class="btn" style="width: 100%;">Disparar Protocolo de Auditoria</button>
+        </form>
+    </section>
+</body>
+</html>

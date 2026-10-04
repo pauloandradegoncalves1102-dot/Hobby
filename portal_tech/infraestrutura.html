@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Nexus - Electrical Infrastructure</title>
+    <link rel="stylesheet" href="https://cloudflare.com">
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        :root { --bg: #040507; --panel: #0e121e; --neon-green: #00ff66; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; background: var(--bg); color: white; padding: 140px 8% 60px 8%; background-image: radial-gradient(circle at 50% 100%, #0a1f14 0%, #040507 80%); }
+        nav { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; background: rgba(4,5,8,0.95); border-bottom: 1px solid rgba(0,240,255,0.15); display: flex; justify-content: space-between; align-items: center; padding: 20px 8%; }
+        .logo { font-family: 'Orbitron', sans-serif; font-size: 22px; color: #00f0ff; }
+        .nav-links { display: flex; gap: 25px; list-style: none; }
+        .nav-links a { color: #64748b; text-decoration: none; font-family: 'Rajdhani', sans-serif; font-size: 18px; font-weight: 700; text-transform: uppercase; }
+        .nav-links a.active { color: #00f0ff; }
+        .grid-services { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .card-service { background: var(--panel); border: 1px solid rgba(0,255,102,0.1); padding: 25px; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .card-service:hover { border-color: var(--neon-green); box-shadow: 0 0 15px rgba(0,255,102,0.15); }
+        .card-service i { font-size: 32px; color: var(--neon-green); margin-bottom: 15px; }
+        .form-box { background: var(--panel); border: 1px solid rgba(0,255,102,0.2); padding: 40px; border-radius: 12px; max-width: 600px; margin: 0 auto; display: none; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-group label { font-family: 'Rajdhani', sans-serif; font-size: 14px; color: #64748b; text-transform: uppercase; }
+        .form-group input, .form-group textarea { padding: 12px; background: #06080e; border: 1px solid rgba(255,255,255,0.08); color: white; border-radius: 6px; }
+        .btn-send { width: 100%; background: var(--neon-green); color: black; border: none; padding: 15px; border-radius: 6px; font-family: 'Orbitron', sans-serif; font-weight: 700; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 12px var(--neon-green); }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">NEXUS.HUB</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="programação.html">Programação</a></li>
+            <li><a href="música.html">Música</a></li>
+            <li><a href="infraestrutura.html" class="active">Infraestrutura</a></li>
+        </ul>
+    </nav>
+
+    <h2 style="font-family:'Orbitron'; margin-bottom:25px; color:var(--neon-green);">Módulos de Engenharia Eletrotécnica & Hardware</h2>
+    <div class="grid-services" id="grid-eletrica"></div>
+
+    <div class="form-box" id="ordem-servico-box">
+        <h3 id="os-titulo" style="font-family:'Orbitron'; margin-bottom:20px; color:white;">Abertura de Chamado Técnico</h3>
+        <form onsubmit="alert('Ordem de Serviço (O.S) disparada e salva no banco de dados Excel.'); this.reset(); return false;">
+            <div class="form-group"><label>Gestor Técnico / Solicitante</label><input type="text" required></div>
+            <div class="form-group"><label>CPF / CNPJ de Cobrança</label><input type="text" required></div>
+            <div class="form-group"><label>Endereço de Execução Predial</label><input type="text" required></div>
+            <div class="form-group"><label>Detalhamento de Escopo / Sintomas da Falha</label><textarea rows="3" required placeholder="Insira o escopo técnico..."></textarea></div>
+            <button type="submit" class="btn-send">Disparar Ordem de Serviço</button>
+        </form>
+    </div>
+
+    <script>
+        const servs = [
+            { n: "Manutenção Predial", i: "fa-building-shield" },
+            { n: "Manutenção de Máquinas", i: "fa-screwdriver-wrench" },
+            { n: "Painéis Elétricos", i: "fa-table-cells-large" },
+            { n: "Diagramas Elétricos", i: "fa-diagram-project" },
+            { n: "Comandos Elétricos", i: "fa-bolt" },
+            { n: "Programação em CLP", i: "fa-microchip" },
+            { n: "Sistemas de Segurança", i: "fa-shield-halved" },
+            { n: "Motores Elétricos", i: "fa-gears" },
+            { n: "Conserto de Placas", i: "fa-plug-circle-bolt" },
+            { n: "Arduino & ESP32 Prototipagem", i: "fa-network-wired" }
+        ];
+
+        const container = document.getElementById('grid-eletrica');
+        servs.forEach(s => {
+            container.innerHTML += `<div class="card-service" onclick="abrirOS('${s.n}')"><i class="fa-solid ${s.i}"></i><h3>${s.n}</h3></div>`;
+        });
+
+        function abrirOS(nome) {
+            document.getElementById('ordem-servico-box').style.display = "block";
+            document.getElementById('os-titulo').innerText = `O.S: ${nome.toUpperCase()}`;
+            document.getElementById('ordem-servico-box').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

@@ -36,7 +36,7 @@
             line-height: 1.6;
         }
 
-        /* ===== PRELOADER ===== */
+  
         .preloader {
             position: fixed; inset: 0;
             background: var(--bg-dark);
@@ -54,7 +54,7 @@
             50% { transform: scale(1.15) rotate(180deg); opacity: 0.7; }
         }
 
-        /* ===== NAVBAR ===== */
+    
         .navbar {
             position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
             padding: 20px 60px;
@@ -100,7 +100,6 @@
         .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; z-index: 1001; }
         .hamburger span { width: 28px; height: 2px; background: var(--primary); transition: all 0.3s; }
 
-        /* ===== HERO ===== */
         .hero {
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
@@ -201,7 +200,7 @@
         }
         .stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 4px; }
 
-        /* ===== SECTIONS ===== */
+      
         .section { padding: 120px 60px; max-width: 1300px; margin: 0 auto; }
         .section-header { text-align: center; margin-bottom: 70px; }
         .section-tag {
@@ -215,7 +214,7 @@
         }
         .section-subtitle { font-size: 1.05rem; color: var(--text-muted); max-width: 550px; margin: 0 auto; }
 
-        /* ===== SERVICES ===== */
+        
         .services-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
@@ -260,7 +259,7 @@
         .service-price { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: var(--primary); }
         .service-price span { font-size: 0.9rem; font-family: 'Inter', sans-serif; color: var(--text-muted); font-weight: 400; }
 
-        /* ===== LANGUAGES ===== */
+        
         .languages-section { background: linear-gradient(180deg, transparent, rgba(74, 108, 247, 0.03), transparent); }
         .languages-grid {
             display: grid;
@@ -285,7 +284,7 @@
         .lang-card h4 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
         .lang-card p { font-size: 0.8rem; color: var(--text-muted); }
 
-        /* ===== PLANS ===== */
+        
         .pricing-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -326,7 +325,7 @@
         .pricing-features li.disabled { opacity: 0.4; }
         .pricing-features li.disabled i { color: var(--text-muted); }
 
-        /* ===== REGISTRATION ===== */
+        
         .registration-section {
             background: linear-gradient(135deg, rgba(74, 108, 247, 0.05), rgba(16, 185, 129, 0.03));
             border: 1px solid rgba(74, 108, 247, 0.15);
@@ -373,7 +372,7 @@
         }
         .form-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(74, 108, 247, 0.3); }
 
-        /* ===== ENROLLED LIST ===== */
+        
         .enrolled-panel {
             background: var(--bg-card);
             border: 1px solid rgba(255, 255, 255, 0.05);
@@ -420,8 +419,6 @@
         }
         .btn-clear:hover { border-color: #ef4444; color: #ef4444; }
         .no-data { text-align: center; padding: 30px; color: var(--text-muted); font-size: 0.9rem; }
-
-        /* ===== TESTIMONIALS ===== */
         .testimonials-wrapper { position: relative; overflow: hidden; }
         .testimonials-track { display: flex; gap: 30px; transition: transform 0.5s ease; }
         .testimonial-card {
@@ -451,8 +448,6 @@
             display: flex; align-items: center; justify-content: center;
         }
         .testimonial-nav button:hover { border-color: var(--primary); color: var(--primary); }
-
-        /* ===== CTA BANNER ===== */
         .cta-banner {
             background: linear-gradient(135deg, rgba(74, 108, 247, 0.1), rgba(16, 185, 129, 0.05));
             border: 1px solid rgba(74, 108, 247, 0.2);
@@ -470,8 +465,6 @@
         .cta-banner h2 { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 3.5vw, 2.8rem); margin-bottom: 16px; position: relative; }
         .cta-banner p { color: var(--text-muted); font-size: 1.05rem; margin-bottom: 32px; position: relative; }
         .cta-banner .btn { position: relative; }
-
-        /* ===== CONTACT ===== */
         .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
         .contact-info h3 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 20px; }
         .contact-info p { color: var(--text-muted); margin-bottom: 30px; line-height: 1.8; }
@@ -493,8 +486,6 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: var(--radius); padding: 40px;
         }
-
-        /* ===== FOOTER ===== */
         .footer { border-top: 1px solid rgba(255, 255, 255, 0.05); padding: 60px; text-align: center; }
         .footer-logo {
             font-family: 'Playfair Display', serif;
@@ -514,13 +505,11 @@
         .footer-socials a:hover { border-color: var(--primary); color: var(--primary); transform: translateY(-3px); }
         .footer-copy { color: var(--text-muted); font-size: 0.85rem; }
 
-        /* ===== ANIMATIONS ===== */
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
         .reveal { opacity: 0; transform: translateY(40px); transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
         .reveal.active { opacity: 1; transform: translateY(0); }
 
-        /* ===== TOAST ===== */
         .toast {
             position: fixed; bottom: 30px; right: 30px;
             background: var(--bg-card);
@@ -535,7 +524,7 @@
         .toast i { color: var(--accent); font-size: 1.2rem; }
         .toast span { font-size: 0.9rem; font-weight: 500; }
 
-        /* ===== RESPONSIVE ===== */
+      
         @media (max-width: 1024px) {
             .testimonial-card { min-width: calc(50% - 15px); }
             .reg-grid, .contact-grid { grid-template-columns: 1fr; }
@@ -571,18 +560,18 @@
 </head>
 <body>
 
-    <!-- Preloader -->
+   
     <div class="preloader" id="preloader">
         <div class="preloader-globe"><i class="fas fa-globe"></i></div>
     </div>
 
-    <!-- Toast -->
+   
     <div class="toast" id="toast">
         <i class="fas fa-check-circle"></i>
         <span id="toastMsg">Inscrito com sucesso!</span>
     </div>
 
-    <!-- Navbar -->
+   
     <nav class="navbar" id="navbar">
         <div class="nav-logo">Linguapro</div>
         <ul class="nav-links" id="navLinks">
@@ -598,7 +587,7 @@
         </div>
     </nav>
 
-    <!-- Hero -->
+  
     <section class="hero" id="inicio">
         <div class="hero-bg"></div>
         <div class="hero-orbs">
@@ -643,8 +632,6 @@
             </div>
         </div>
     </section>
-
-    <!-- Services -->
     <section class="section" id="servicos">
         <div class="section-header reveal">
             <span class="section-tag">O que oferecemos</span>
@@ -691,7 +678,6 @@
         </div>
     </section>
 
-    <!-- Languages -->
     <section class="section languages-section" id="idiomas">
         <div class="section-header reveal">
             <span class="section-tag">Idiomas disponíveis</span>
@@ -714,7 +700,6 @@
         </div>
     </section>
 
-    <!-- Plans -->
     <section class="section" id="planos">
         <div class="section-header reveal">
             <span class="section-tag">Investimento</span>
@@ -767,7 +752,6 @@
         </div>
     </section>
 
-    <!-- Registration -->
     <div class="registration-section reveal" id="inscricao">
         <div class="reg-grid">
             <div class="reg-info">
@@ -840,7 +824,6 @@
                     </button>
                 </form>
 
-                <!-- Enrolled List -->
                 <div class="enrolled-panel">
                     <div class="enrolled-header">
                         <h4><i class="fas fa-users" style="color:var(--primary);margin-right:8px;"></i>Inscritos</h4>
@@ -861,8 +844,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Testimonials -->
     <section class="section" id="depoimentos">
         <div class="section-header reveal">
             <span class="section-tag">Depoimentos</span>
@@ -918,7 +899,6 @@
         </div>
     </section>
 
-    <!-- CTA Banner -->
     <div class="cta-banner reveal">
         <h2>Pronto para dominar um novo idioma?</h2>
         <p>Inscreva-se agora e ganhe uma aula experimental gratuita de 30 minutos.</p>
@@ -928,7 +908,6 @@
         </a>
     </div>
 
-    <!-- Contact -->
     <section class="section" id="contato">
         <div class="contact-grid">
             <div class="contact-info reveal">
@@ -974,7 +953,6 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="footer-logo">Linguapro</div>
         <div class="footer-socials">
@@ -988,12 +966,12 @@
     </footer>
 
     <script>
-        // ===== PRELOADER =====
+  
         window.addEventListener('load', () => {
             setTimeout(() => document.getElementById('preloader').classList.add('hidden'), 800);
         });
 
-        // ===== NAVBAR =====
+    
         const navbar = document.getElementById('navbar');
         window.addEventListener('scroll', () => navbar.classList.toggle('scrolled', window.scrollY > 50));
 
@@ -1002,7 +980,7 @@
         hamburger.addEventListener('click', () => navLinks.classList.toggle('open'));
         navLinks.querySelectorAll('a').forEach(l => l.addEventListener('click', () => navLinks.classList.remove('open')));
 
-        // ===== COUNTERS =====
+     
         const counters = document.querySelectorAll('.stat-number');
         const counterObs = new IntersectionObserver(entries => {
             entries.forEach(e => {
@@ -1020,14 +998,14 @@
         }, { threshold: 0.5 });
         counters.forEach(c => counterObs.observe(c));
 
-        // ===== REVEAL =====
+  
         const reveals = document.querySelectorAll('.reveal');
         const revealObs = new IntersectionObserver(entries => {
             entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('active'); });
         }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
         reveals.forEach(r => revealObs.observe(r));
 
-        // ===== TESTIMONIALS CAROUSEL =====
+   
         const track = document.getElementById('testimonialTrack');
         let curSlide = 0;
         function slideW() { return track.querySelector('.testimonial-card').offsetWidth + 30; }
@@ -1049,7 +1027,7 @@
             track.style.transform = `translateX(-${curSlide * slideW()}px)`;
         }, 5000);
 
-        // ===== TOAST =====
+    
         function showToast(msg) {
             const toast = document.getElementById('toast');
             document.getElementById('toastMsg').textContent = msg;
@@ -1057,7 +1035,7 @@
             setTimeout(() => toast.classList.remove('show'), 3500);
         }
 
-        // ===== ENROLLMENT SYSTEM =====
+    
         const STORAGE_KEY = 'linguapro_inscritos';
 
         function getInscritos() {
@@ -1094,7 +1072,6 @@
             container.innerHTML = html;
         }
 
-        // Form submission
         document.getElementById('regForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
@@ -1123,7 +1100,7 @@
             showToast(`${nome.split(' ')[0]} inscrito(a) com sucesso!`);
         });
 
-        // Export to Excel
+  
         document.getElementById('btnExcel').addEventListener('click', function() {
             const list = getInscritos();
             if (list.length === 0) {
@@ -1144,7 +1121,6 @@
 
             const ws = XLSX.utils.json_to_sheet(data);
 
-            // Set column widths
             ws['!cols'] = [
                 { wch: 5 },  
                 { wch: 30 },  

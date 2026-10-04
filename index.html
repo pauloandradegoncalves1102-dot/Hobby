@@ -23,24 +23,16 @@
     </style>
 </head>
 <body>
-
-    <!-- Tela de pintura gráfica nativa do navegador -->
     <canvas id="renderCanvas" width="800" height="600"></canvas>
-
     <script>
         const canvas = document.getElementById("renderCanvas");
         const ctx = canvas.getContext("2d");
         const width = canvas.width;
         const height = canvas.height;
-
-        // 1. Modelagem Geométrica: Coordenadas brutas dos 8 vértices de um cubo 3D (X, Y, Z)
         const vertices = [
             {x: -1, y: -1, z: -1}, {x: 1, y: -1, z: -1}, {x: 1, y: 1, z: -1}, {x: -1, y: 1, z: -1},
             {x: -1, y: -1, z: 1},  {x: 1, y: -1, z: 1},  {x: 1, y: 1, z: 1},  {x: -1, y: 1, z: 1}
         ];
-
-        // Mapeamento de quais vértices se conectam para formar as 6 faces quadradas do cubo
-        // E a cor correspondente de cada face do objeto
         const faces = [
             { indices: [0, 1, 2, 3], color: "#ff4136" }, // Trás
             { indices: [1, 5, 6, 2], color: "#0074d9" }, // Direita
@@ -49,51 +41,30 @@
             { indices: [4, 5, 1, 0], color: "#b10dc9" }, // Topo
             { indices: [3, 2, 6, 7], color: "#01ff70" }  // Fundo
         ];
-
-        // Ângulos iniciais de rotação do objeto espacial
         let angleX = 0.01;
         let angleY = 0.015;
-
-        // 2. Função de Projeção Matemática (Converte coordenadas 3D do mundo para pixels 2D da tela)
         function project(vertex) {
-            const fov = 400;          // Distância focal (ajusta o zoom da perspectiva)
-            const viewerDistance = 4; // Distância da câmera virtual ao objeto
-            
-            // Aplica a ilusão de ótica da perspectiva real (objetos distantes parecem menores)
+            const fov = 400;         
+            const viewerDistance = 4; 
             const factor = fov / (viewerDistance + vertex.z);
             const x2d = vertex.x * factor + width / 2;
             const y2d = vertex.y * factor + height / 2;
-            
             return { x: x2d, y: y2d, z: vertex.z };
         }
-
-        // 3. Loop Principal de Atualização Física e Renderização Visual (Engine Loop)
         function update() {
-            // Limpa o frame anterior para desenhar o próximo movimento limpo
             ctx.clearRect(0, 0, width, height);
-
-            // Variáveis trigonométricas para calcular as matrizes de rotação espacial
             const radX = angleX;
             const radY = angleY;
             const cosX = Math.cos(radX), sinX = Math.sin(radX);
             const cosY = Math.cos(radY), sinY = Math.sin(radY);
-
-            // Cria uma nova lista para armazenar os pontos rotacionados e projetados neste frame
             const transformedVertices = vertices.map(v => {
                 // Rotação no eixo Y
                 let x1 = v.x * cosY - v.z * sinY;
                 let z1 = v.x * sinY + v.z * cosY;
-
-                // Rotação no eixo X
                 let y2 = v.y * cosX - z1 * sinX;
                 let z2 = v.y * sinX + z1 * cosX;
-
-                // Envia o ponto rotacionado para o cálculo da lente da câmera
                 return project({ x: x1, y: y2, z: z2 });
             });
-
-            // --- CÁLCULO DE POLÍGONOS OCULTOS (Z-BUFFERING MANUAL) ---
-            // Calcula o centro de profundidade (Z médio) de cada face para sabermos qual está na frente
             faces.forEach(face => {
                 face.avgZ = (
                     transformedVertices[face.indices[0]].z +
@@ -102,41 +73,24 @@
                     transformedVertices[face.indices[3]].z
                 ) / 4;
             });
-
-            // Ordena as faces de trás para frente (Algoritmo do Pintor).
-            // Isso garante que as faces da frente sejam desenhadas por cima das faces de trás.
             faces.sort((a, b) => b.avgZ - a.avgZ);
-
-            // 4. Desenho Técnico dos Polígonos na Tela
             faces.forEach(face => {
                 ctx.beginPath();
-                // Move o cursor do navegador para o primeiro vértice da face
                 ctx.moveTo(transformedVertices[face.indices[0]].x, transformedVertices[face.indices[0]].y);
-                
-                // Conecta as linhas entre os 4 pontos do quadrado
                 for (let i = 1; i < 4; i++) {
                     ctx.lineTo(transformedVertices[face.indices[i]].x, transformedVertices[face.indices[i]].y);
                 }
-                
                 ctx.closePath();
-                
-                // Aplica a cor preenchida e uma borda preta suave para dar acabamento tridimensional
                 ctx.fillStyle = face.color;
                 ctx.fill();
                 ctx.strokeStyle = "#11141d";
                 ctx.lineWidth = 2;
                 ctx.stroke();
             });
-
-            // Incrementa os ângulos continuamente para gerar o giro contínuo do motor 3D
             angleX += 0.01;
             angleY += 0.013;
-
-            // Solicita ao navegador o próximo frame nativo do monitor
             requestAnimationFrame(update);
         }
-
-        // Executa o motor gráfico imediatamente
         update();
     </script>
 </body>

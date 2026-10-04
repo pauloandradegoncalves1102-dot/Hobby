@@ -265,15 +265,12 @@ function createStars() {
   const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, sizeAttenuation: true });
   scene.add(new THREE.Points(geo, mat));
 }
-
 function createPlanet(key, data) {
   const geo = new THREE.SphereGeometry(data.radius, 32, 32);
   const mat = new THREE.MeshPhongMaterial({ color: data.color, shininess: 10 });
   const mesh = new THREE.Mesh(geo, mat);
   mesh.userData.name = key;
   scene.add(mesh);
-
-  // Saturn rings
   if (key === 'saturn') {
     const ringGeo = new THREE.RingGeometry(data.radius * 1.4, data.radius * 2.2, 64);
     const ringMat = new THREE.MeshBasicMaterial({ color: 0xc8b87a, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
@@ -282,14 +279,11 @@ function createPlanet(key, data) {
     mesh.add(ring);
   }
 
-  // Earth atmosphere glow
   if (key === 'earth') {
     const glowGeo = new THREE.SphereGeometry(data.radius * 1.15, 32, 32);
     const glowMat = new THREE.MeshBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.15 });
     mesh.add(new THREE.Mesh(glowGeo, glowMat));
   }
-
-  // Orbit line
   if (data.orbit > 0) {
     const points = [];
     for (let i = 0; i <= 128; i++) {
@@ -302,8 +296,6 @@ function createPlanet(key, data) {
     scene.add(line);
     orbitLines[key] = line;
   }
-
-  // Label
   const canvas2d = document.createElement('canvas');
   canvas2d.width = 128; canvas2d.height = 32;
   const ctx2d = canvas2d.getContext('2d');
@@ -317,14 +309,11 @@ function createPlanet(key, data) {
   sprite.scale.set(20, 5, 1);
   scene.add(sprite);
   labels[key] = sprite;
-
   planets[key] = { mesh, data, angle: Math.random() * Math.PI * 2 };
 }
-
 function animate() {
   requestAnimationFrame(animate);
   const dt = clock.getDelta();
-
   if (playing) {
     for (let key in planets) {
       const p = planets[key];
@@ -341,8 +330,6 @@ function animate() {
       }
     }
   }
-
-  // Fly-to animation
   if (flyToTarget) {
     flyToProgress += dt * 1.5;
     if (flyToProgress >= 1) {
@@ -363,10 +350,8 @@ function animate() {
       camera.lookAt(targetPos);
     }
   }
-
   renderer.render(scene, camera);
 }
-
 function flyTo(key) {
   selectedPlanet = key;
   flyToTarget = key;
@@ -377,7 +362,6 @@ function flyTo(key) {
   const idx = Object.keys(PLANETS).indexOf(key);
   if (btns[idx]) btns[idx].classList.add('active');
 }
-
 function showInfo(key) {
   const d = PLANETS[key];
   document.getElementById('info-name').textContent = d.name;
@@ -392,30 +376,25 @@ function showInfo(key) {
   document.getElementById('info-facts').innerHTML = d.facts.map(f => `<p>• ${f}</p>`).join('');
   document.getElementById('info-panel').classList.add('visible');
 }
-
 function closeInfo() {
   document.getElementById('info-panel').classList.remove('visible');
   selectedPlanet = null;
   document.querySelectorAll('.planet-btn').forEach(b => b.classList.remove('active'));
 }
-
 function togglePlay() {
   playing = !playing;
   document.getElementById('btn-play').textContent = playing ? '⏸ Pause' : '▶ Play';
   document.getElementById('btn-play').classList.toggle('active', playing);
 }
-
 function toggleOrbits() {
   showOrbits = !showOrbits;
   Object.values(orbitLines).forEach(l => l.visible = showOrbits);
   document.getElementById('btn-orbits').classList.toggle('active', showOrbits);
 }
-
 function toggleLabels() {
   showLabels = !showLabels;
   document.getElementById('btn-labels').classList.toggle('active', showLabels);
 }
-
 function updateSpeed() {
   speedMultiplier = parseInt(document.getElementById('speed-slider').value);
   document.getElementById('speed-val').textContent = speedMultiplier + 'x';
